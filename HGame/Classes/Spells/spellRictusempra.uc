@@ -68,7 +68,7 @@ defaultproperties
 
     fxFlyParticleEffectClass=Class'HPParticle.Rictusempra_fly'
 
-    fxHitParticleEffectClass=Class'HPParticle.Rictusempra_hit'
+    fxHitParticleEffectClass=Class'DD39Rictusempra_hit'
 
     SpellIncantation="spells1"
 
@@ -76,4 +76,10 @@ defaultproperties
 
     // DrawType=0
 	DrawType=DT_None
+	
+	//DD39: hue change
+	LightHue=2
+	
+	//DD39: radius change
+	LightRadius=8
 }

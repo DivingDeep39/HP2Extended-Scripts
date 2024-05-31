@@ -47,7 +47,7 @@ defaultproperties
 
     fxFlyParticleEffectClass=Class'HPParticle.Lumos_fly'
 
-    fxHitParticleEffectClass=Class'HPParticle.Lumos_hit'
+    fxHitParticleEffectClass=Class'DD39Lumos_hit'
 
     SpellIncantation="spells3"
 
@@ -57,4 +57,13 @@ defaultproperties
 
     // DrawType=0
 	DrawType=DT_None
+	
+	//DD39: brightness change
+	LightBrightness=400
+	
+	//DD39: hue change
+	LightHue=32
+	
+	//DD39: radius changes
+	LightRadius=8
 }

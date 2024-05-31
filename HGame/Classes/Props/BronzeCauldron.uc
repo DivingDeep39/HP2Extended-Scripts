@@ -12,6 +12,15 @@ var() Vector ObjectStartVelocity[3];
 var() bool bRandomBean;
 var() bool bMakeSpawnPersistent;
 var bool bOpened;
+//DD39: adding a string to set the global key
+var() string GlobalCauldronKey;
+
+//DD39: added PostBeginPlay to check for the global key to get
+event PostBeginPlay()
+{
+  Super.PostBeginPlay();
+  CheckGlobalCauldronKey();
+}
 
 function int GetMaxEjectedObjects()
 {
@@ -42,12 +51,14 @@ function SetupRandomBeans()
   }
 }
 
+
 state stillOpen
 {
  begin:
   bProjTarget = False;
-  eVulnerableToSpell =  SPELL_None; 
-  LoopAnim('End');
+  eVulnerableToSpell =  SPELL_None;
+  //DD39: corrected "End" with "tipped"
+  LoopAnim('tipped');
 }
 
 auto state waitforspell
@@ -62,13 +73,32 @@ auto state waitforspell
   
   function bool HandleSpellFlipendo (optional baseSpell spell, optional Vector vHitLocation)
   {
+    //DD39: added local vars from chestbronze
+	local Vector spawnLoc;
+    local Actor newSpawn;
+	
     GotoState('turnover');
     return True;
+  }
+  
+//DD39: added begin for auto state
+ begin:
+  if (  !bOpened )
+  {
+    LoopAnim('sit');
   }
 }
 
 state turnover
 {
+  //DD39: added function BeginState to set the global key
+  function BeginState()
+  {
+    bOpened = True;
+    //Level.PlayerHarryActor.ClientMessage(" BronzeCauldron " $ string(self) $ " is opening so bOpened = " $ string(bOpened));
+	SetGlobalCauldronKey();
+  }
+  
   function generateobject()
   {
     local Vector Dir;
@@ -140,6 +170,24 @@ state turnover
   FinishAnim();
   generateobject();
   LoopAnim('tipped');
+}
+
+//DD39: added function to set the global key
+function SetGlobalCauldronKey()
+{
+	if (GlobalCauldronKey != "")
+	{
+		SetGlobalBool(GlobalCauldronKey,true);
+	}
+}
+
+//DD39: added function to get the global key
+function CheckGlobalCauldronKey()
+{
+	if (GetGlobalBool(GlobalCauldronKey))
+	{
+		bOpened = True;
+	}	
 }
 
 defaultproperties

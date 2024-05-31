@@ -157,14 +157,16 @@ function bool AttackHarryCheck()
   vTargetDir = PlayerHarry.Location - Location;
   if ( self.IsA('SpiderSmall') )
   {
-    if ( (VSize(PlayerHarry.Velocity) < 5) && (VSize(vTargetDir) < SightRadius) )
+    //DD39: Added "&& PlayerCanSeeMe() && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet')"
+	if ( (VSize(PlayerHarry.Velocity) < 5) && (VSize(vTargetDir) < SightRadius) && PlayerCanSeeMe() && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
     {
       Attack = True;
     }
   } else //{
     if ( self.IsA('SpiderLarge') )
     {
-      if ( VSize(vTargetDir) < SightRadius )
+      //DD39: Added "&& PlayerCanSeeMe() && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet')"
+	  if ( VSize(vTargetDir) < SightRadius && PlayerCanSeeMe() && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
       {
         Attack = True;
       }
@@ -459,7 +461,9 @@ state Wander
   } else {
     if ( AttackHarryCheck() != True )
     {
-      vDir = getNewDirection();
+      //DD39: Added "LoopAnim('Walk',0.85);"
+	  LoopAnim('Walk',0.85);
+	  vDir = getNewDirection();
       MoveTo(vDir);
     }
     LoopAnim('Walk',0.85);

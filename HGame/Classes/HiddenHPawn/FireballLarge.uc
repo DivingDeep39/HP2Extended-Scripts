@@ -41,10 +41,10 @@ function ShootFireballs()
 	rotate_fireball.Pitch  += (65536 * 10) / 4;
 	if ( VSize(PlayerHarry.Location - Location) < GrenadeRadius )
 	{
-		PlayerHarry.ShakeView(0.3,200.0,200.0);
-		ratio 			= VSize(PlayerHarry.Location - Location) / GrenadeRadius;
-		grenadeDamage 	= iDamage - (iDamage * ratio);
-		PlayerHarry.TakeDamage(grenadeDamage,None,vect(0.00,0.00,0.00),vect(0.00,0.00,0.00),'None');
+	  PlayerHarry.ShakeView(0.3,200.0,200.0);
+	  ratio 			= VSize(PlayerHarry.Location - Location) / GrenadeRadius;
+	  grenadeDamage 	= iDamage - (iDamage * ratio);
+	  PlayerHarry.TakeDamage(grenadeDamage,None,vect(0.00,0.00,0.00),vect(0.00,0.00,0.00),'None');
 	}
 	for(i = 0; i < NumFireballs; i++)
 	{
@@ -81,9 +81,9 @@ function Touch (Actor Other)
 	}
 	if ( (Other == PlayerHarry) && (bTouch == True) )
 	{
-		Other.TakeDamage(iDamage,None,vect(0.00,0.00,0.00),vect(0.00,0.00,0.00),'None');
-		SetTimer(0.2,False);
-		bTouch = False;
+	  Other.TakeDamage(iDamage,None,vect(0.00,0.00,0.00),vect(0.00,0.00,0.00),'None');
+	  SetTimer(0.2,False);
+	  bTouch = False;
 	}
 	PlaySound(Sound'spell_hit',SLOT_Interact,1.0,False,2000.0,1.0);
 }
@@ -112,5 +112,22 @@ defaultproperties
     bCollideActors=True
 
     bCollideWorld=True
+	
+	//DD39
+	LightType=LT_Steady
 
+    //DD39
+	LightEffect=LE_NonIncidence
+
+    //DD39
+	LightBrightness=201
+
+    //DD39
+	LightHue=22
+
+    //DD39
+	LightSaturation=72
+
+    //DD39
+	LightRadius=10
 }

@@ -93,11 +93,15 @@ function float GetTimerDuration()
                             {
                               fDuration = 150.0;
                             } else //{
-                              if ( nGryffAheadBy > 175 )
+                              // DD39: Correction
+							  //if ( nGryffAheadBy > 175 )
+							  if ( nGryffAheadBy > 185 )
                               {
                                 fDuration = 140.0;
                               } else //{
-                                if ( nGryffAheadBy > 185 )
+                                // DD39: Correction
+								//if ( nGryffAheadBy > 185 )
+								if ( nGryffAheadBy > 175 )
                                 {
                                   fDuration = 130.0;
                                 } else //{

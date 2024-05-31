@@ -31,6 +31,10 @@ var ParticleFX fxSwordParticles;
 var bool bGlowingWand;
 var bool bUseDebugMode;
 var harry PlayerHarry;
+// DD39: Var for custom sword light.
+var DD39SwordBladeLight SwordLight;
+// DD39: Var for custom spell charge light.
+var DD39ChargeSpellLight ChargeLight;
 
 function SetDebugMode (bool bOn)
 {
@@ -112,6 +116,9 @@ function StartChargingSpell (bool bChargeSpell, optional bool in_bHarryUsingSwor
   if ( in_bHarryUsingSword )
   {
     fxSwordParticles.EnableEmission(True);
+	// DD39: Spawn custom sword light and attach it to basewand.
+	SwordLight = Spawn(Class'DD39SwordBladeLight',self);
+	SwordLight.AttachToOwner();
   } else {
     if ( fxChargeParticles != None )
     {
@@ -119,7 +126,10 @@ function StartChargingSpell (bool bChargeSpell, optional bool in_bHarryUsingSwor
     }
     if ( ChargeSpellClass != None )
     {
-      fxChargeParticles = Spawn(GetChargeParticleClass(ChargeSpellClass));
+	  fxChargeParticles = Spawn(GetChargeParticleClass(ChargeSpellClass));
+	  // DD39: Spawn custom spell charge light and attach it to basewand.
+	  ChargeLight = Spawn(GetChargeLightClass(ChargeSpellClass),self);
+	  ChargeLight.AttachToOwner();
     } else {
       fxChargeParticles = Spawn(Default.fxChargeParticleFXClass);
       fxChargeParticles.SizeWidth.Base = 8.0;
@@ -137,13 +147,25 @@ function StopChargingSpell()
   bSpellCharges = False;
   fSpellChargeTime = 0.0;
   fSpellCharge = 0.0;
+  
   if ( bGlowingWand )
   {
     ScaleParticles(fxChargeParticles,1.0);
   } else {
     fxChargeParticles.Shutdown();
   }
-  fxSwordParticles.EnableEmission(False);
+  // DD39: Added a bUsingSword check.
+  if ( bUsingSword )
+  {
+    fxSwordParticles.EnableEmission(False);
+    // DD39: Run sword light wear off effect.
+    SwordLight.DoWearOff();
+	// DD39: Stop looping sound.
+	StopSound(Sound'sword_loop',SLOT_Interact);
+  }
+  
+  // DD39: Run function to wear off spell charge light.
+  WearOffChargeLight();
 }
 
 function Class<ParticleFX> GetChargeParticleClass (Class<baseSpell> spellClass)
@@ -174,6 +196,48 @@ function Class<ParticleFX> GetChargeParticleClass (Class<baseSpell> spellClass)
   }
   // goto JL0099;
   return Class'Flip_fly';
+}
+
+// DD39: Function to get the spell charge light.
+function Class<DD39ChargeSpellLight> GetChargeLightClass (Class<baseSpell> spellClass)
+{
+	// DD39: This wears off light when switching spells.
+	WearOffChargeLight();
+	
+	switch (spellClass)
+	{
+		case Class'spellDuelRictusempra':
+		return Class'DD39duelRictusempraChargeLight';
+		
+		case Class'spellDuelMimblewimble':
+		return Class'DD39duelMimblewimbleChargeLight';
+		
+		case Class'spellDuelExpelliarmus':
+		return Class'DD39duelExpelliarmusChargeLight';
+		
+		default: break;
+	}
+}
+
+// DD39: Function to wear off spell charge light.
+function WearOffChargeLight()
+{
+	if ( !PlayerHarry.bInDuelingMode )
+	{
+		return;
+	}
+	
+	if ( ChargeLight == None )
+	{
+		return;
+	}
+	
+	if ( ChargeLight.bWearOff )
+	{
+		return;
+	}
+	
+	ChargeLight.DoWearOff();
 }
 
 function Class<baseSpell> GetClassFromSpellName (string SpellName)
@@ -336,7 +400,8 @@ event Tick (float fTimeDelta)
       fSwordFXTime = FMin(fSwordFXTime,fSwordFXTimeSpan);
       if ( (fSwordFXTime >= 1.89999998) && (fSwordFXTime - fTimeDelta < 1.89999998) )
       {
-        PlaySound(Sound'sword_loop',SLOT_Interact);
+        //DD39: Made the sound loop.
+		PlaySound(Sound'sword_loop',SLOT_Interact,,,,,,True);
       }
       fScale = fSwordFXTime / fSwordFXTimeSpan;
       WandEndPoint = Pawn(Owner).WeaponLoc - (Vec(0.0,0.0,fSwordLength * fScale) >> Pawn(Owner).WeaponRot);
@@ -693,5 +758,4 @@ defaultproperties
 	
 	// Metallicafan212:	Needed to restore base UE1 behavior to weapons
 	bRespectHidden=true
-
 }

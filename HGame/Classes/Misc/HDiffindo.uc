@@ -21,6 +21,8 @@ var() float fDiffindoTimer;
 var() bool bUseDiffindoSpellHitFX;
 var() Sound DiffindoImpactSound;
 var() Sound DiffindoCutSound;
+//DD39: adding a string to set the global key
+var() string GlobalHDiffindoKey;
 
 function PreBeginPlay()
 {
@@ -28,6 +30,31 @@ function PreBeginPlay()
   SetCollision(True,True,True);
   bbArea = GetWorldCollisionBox(True);
   ComputeNewStartAndEndPoints();
+}
+
+//DD39: added PostBeginPlay to check for the global key to get
+event PostBeginPlay()
+{
+  Super.PostBeginPlay();
+  CheckGlobalHDiffindoKey();
+}
+
+//DD39: added function to set the global key
+function SetGlobalHDiffindoKey()
+{
+	if (GlobalHDiffindoKey != "")
+		{
+			SetGlobalBool(GlobalHDiffindoKey,true);
+		}
+}
+
+//DD39: added function to get the global key
+function CheckGlobalHDiffindoKey()
+{
+	if (GetGlobalBool(GlobalHDiffindoKey))
+	{
+		Destroy();
+	}	
 }
 
 event Destroyed()
@@ -168,6 +195,8 @@ state stateHitByDiffindo
       OnDiffindoExplode();
       TriggerEvent(Event,None,None);
       fxCut.Shutdown();
+	  //DD39: added function to set the global key
+	  SetGlobalHDiffindoKey();
       Destroy();
     }
   }

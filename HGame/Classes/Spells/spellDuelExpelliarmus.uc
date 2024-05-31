@@ -77,7 +77,7 @@ defaultproperties
 
     SeekSpeed=0.00
 
-    fxHitParticleEffectClass=Class'HPParticle.Lumos_hit'
+    fxHitParticleEffectClass=Class'DD39duelExpelliarmus_hit'
 
     SpellIncantation="spells3"
 
@@ -87,4 +87,10 @@ defaultproperties
 
     // DrawType=0
 	DrawType=DT_None
+	
+	//DD39: hue change
+	LightHue=23
+	
+	//DD39: radius change
+	LightRadius=2
 }

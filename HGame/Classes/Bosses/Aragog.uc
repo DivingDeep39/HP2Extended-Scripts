@@ -105,6 +105,11 @@ var int TempCount;
 var int TempCount2;
 var Rotator TempRotator;
 var Vector TempVector;
+// DD39: Turns on/off PlayRandomSound
+var bool bNoMoreSound;
+// DD39: New actor vars for Aragog invisible collision objects.
+//var DD39AragogColObjDmg AragDmg;
+var DD39AragogColObjBlk AragBlk;
 
 function PostBeginPlay()
 {
@@ -139,6 +144,20 @@ function PostBeginPlay()
     webAnchors[A.iLocation].HitTime = -1.0;
   }
   RearUpTime = RearUpTimeStart;
+  
+  // DD39: Set up new invisible colobj's.
+  /*if ( AragDmg == None )
+  {
+	AragDmg = Spawn(Class'DD39AragogColObjDmg',self,,Location,Rotation);
+	AragDmg.AttachToOwner();
+	AragDmg.SetCollisionSize(CollisionRadius,CollisionHeight);
+  }*/
+  if ( AragBlk == None )
+  {
+    AragBlk = Spawn(Class'DD39AragogColObjBlk',self,,Location,Rotation);
+	AragBlk.AttachToOwner();
+	//AragBlk.SetCollisionSize(CollisionRadius - 2,CollisionHeight - 2);
+  }
 }
 
 function BeatBoss()
@@ -434,7 +453,13 @@ function Touch (Actor Other)
 {
   if ( Other.IsA('harry') && (Health > 0) )
   {
-    GotoState('NipHarry');
+	// DD39: If hit by Rictusempra and going home, don't nip.
+	if ( IsInState('stateHitByRictusempra') || IsInState('stateGoHome') )
+	{
+		return;
+	}
+	
+	GotoState('NipHarry');
   }
 }
 
@@ -495,7 +520,12 @@ function Tick (float DeltaTime)
       {
         if ( Rand(3) == 0 )
         {
-          PlayRandomSound();
+          // DD39: Disables PlayRandomSound
+		  if ( !bNoMoreSound )
+		  {
+		    bNoMoreSound = True;
+			PlayRandomSound();
+		  }
         }
         LoopAnim('rotate',1.0,0.2);
         rRotationTowardHarry.Pitch = 0;
@@ -534,8 +564,10 @@ function Tick (float DeltaTime)
   {
     if ( (AnimSequence == 'Bite') && (AnimFrame >= BiteStartFrame) && (AnimFrame <= BiteEndFrame) && (bCanBiteHarry == True) )
     {
-      vBiteVector = Location + (vector(Rotation) * 390);
-      if ( VSize2D(vBiteVector - PlayerHarry.Location) < 40 )
+      //DD39: Replaced "+ (vector(Rotation) * 390)"
+	  vBiteVector = Location + (vector(Rotation) * 190);
+      //DD39: default distance is "< 40"
+	  if ( VSize2D(vBiteVector - PlayerHarry.Location) < 240 )
       {
         bCanBiteHarry = False;
         if ( bBigBite == True )
@@ -859,8 +891,16 @@ state stateGoHome
 {
   function BeginState()
   {
-    bMove = False;
+	bMove = False;
+	/*// DD39: Disable ColObjDmg tick.
+	AragDmg.Disable('Tick');*/
   }
+  
+  /*// DD39: Added EndState event.
+  event EndState()
+  {
+	AragDmg.Enable('Tick');
+  }*/
   
  begin:
   vDir = Normal(vHome - Location);
@@ -991,7 +1031,8 @@ state stateShootSpell
 		  spellLocation -= vect(0.00,0.00,5.00);
 		  // spellOrigin = Location + Rotation * 155;
 		  spellOrigin = Location + (vector(Rotation) * 155);
-		  spellOrigin = spellOrigin + Vec(0.0,0.0,160.0);
+		  //DD39: Replaced "+ Vec(0.0,0.0,160.0)"
+		  spellOrigin = spellOrigin + Vec(0.0,0.0,120.0);
 		  attackSpell = AragogSpellAttack(FancySpawn(Class'AragogSpellAttack',self,,spellOrigin,rotator(vDir)));
 		  attackSpell.iDamage = SpellDamage;
 		  attackSpell.hitTarget = spellLocation;
@@ -1047,7 +1088,8 @@ state stateShootSpell
 			}
 			// spellOrigin = Location + Rotation * 155;
 			spellOrigin = Location + (vector(Rotation) * 155);
-			spellOrigin = spellOrigin + Vec(0.0,0.0,160.0);
+			//DD39: Replaced "+ Vec(0.0,0.0,160.0)" 
+			spellOrigin = spellOrigin + Vec(0.0,0.0,80.0);
 			attackSpell = Spawn(Class'AragogSpellAttack',self,,spellOrigin,rotator(vDir));
 			attackSpell.iDamage = SpellDamage;
 			attackSpell.hitTarget = spellLocation;
@@ -1081,15 +1123,32 @@ state stateShootSpell
   DesiredRotation.Yaw = rotator(PlayerHarry.Location - Location).Yaw;
   Sleep(RearUpTime * 1.0);
   LoopAnim('Idle',1.0,1.0);
+  // DD39: Re-enables PlayRandomSound
+  bNoMoreSound = False;
   GotoState('stateHarryHunting');
 }
 
 state stateHitByRictusempra
 {
+  /*// DD39: Added BeginState event.
+  event BeginState()
+  {
+	AragDmg.Disable('Tick');
+  }*/
+  
   function Timer()
   {
     PlaySound(Sound'Basilisk_attack3',SLOT_None,1.0,,1000000.0,0.69999999);
   }
+  
+  /*// DD39: Added EndState event.
+  event EndState()
+  {
+	if ( !IsInState('stateGoHome') )
+	{
+		AragDmg.Enable('Tick');
+	}
+  }*/
   
  begin:
   TempFloat = 0.44999999;
@@ -1133,6 +1192,24 @@ state stateHitByRictusempra
 
 state stateBeatAragog
 {
+	// DD39: Added BeginState to destroy all spells and webs:
+	event BeginState()
+	{
+	  local AragogStickyWeb webSticky;
+	  
+	  //AragDmg.Destroy();
+	  
+	  foreach AllActors(Class'AragogSpellAttack',attackSpell)
+	  {
+	    attackspell.Destroy();
+	  }
+	  
+	  foreach AllActors(Class'AragogStickyWeb',webSticky)
+	  {
+	    webSticky.Destroy();
+	  }
+	}
+
 begin:
   PlayAnim('slump',0.69999999,0.2);
   PlaySound(Sound'SS_ARA_Hurtscream_0002',Slot_None,1.0,,1000000.0);
@@ -1260,7 +1337,7 @@ defaultproperties
 	
     bBlockActors=False
 
-    bBlockPlayers=False
+	bBlockPlayers=False
 	
 	bRotateToDesired=True
 	

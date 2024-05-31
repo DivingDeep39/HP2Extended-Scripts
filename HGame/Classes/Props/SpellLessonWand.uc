@@ -58,7 +58,8 @@ defaultproperties
 
     bIgnoreStationRotations=True
 
-    Mesh=SkeletalMesh'HPModels.WandMesh'
+	//DD39: new mesh to fix the wand's orientation
+	Mesh=SkeletalMesh'Extended_Meshes.skDD39WandMesh'
 
     DrawScale=1.50
 

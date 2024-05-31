@@ -13,6 +13,10 @@ const NUM_WOOSH_SOUNDS= 4;
 const NUM_SLOW_WOOSH_SOUNDS= 5;
 const NUM_HIT_SOUNDS= 3;
 const fMaxTimeSameAvoidDir= 1.0;
+
+// DD39: Added const to fix movement at high fps
+const FPS_FIX= 60.00;
+
 enum EControlDevice {
   DEVICE_Button,
   DEVICE_Mouse,
@@ -854,7 +858,8 @@ function PlayerTrack (float DeltaTime)
 
   fLastHorzOffset = fTargetTrackHorzOffset;
   fTargetTrackHorzOffset += (bBroomYawRight - bBroomYawLeft) * 350.0 * DeltaTime;
-  fTargetTrackHorzOffset += aBroomYaw * fBroomSensitivity * TrackingOffsetRange_Horz;
+  // DD39: Fix horz mouse movement at high fps: added " * ( DeltaTime * FPS_FIX )"
+  fTargetTrackHorzOffset += aBroomYaw * fBroomSensitivity * TrackingOffsetRange_Horz * ( DeltaTime * FPS_FIX );
   fTargetTrackHorzOffset += aJoyBroomYaw * fJoyBroomSensitivity * 350.0 * DeltaTime;
   if ( fTargetTrackHorzOffset > TrackingOffsetRange_Horz )
   {
@@ -867,7 +872,8 @@ function PlayerTrack (float DeltaTime)
   //}
   fLastVertOffset = fTargetTrackVertOffset;
   fDeltaPitch = (bBroomPitchUp - bBroomPitchDown) * 350.0 * DeltaTime;
-  fDeltaPitch -= aBroomPitch * fBroomSensitivity * TrackingOffsetRange_Vert;
+  // DD39: Fix vert mouse movement at high fps: added " * ( DeltaTime * FPS_FIX )"
+  fDeltaPitch -= aBroomPitch * fBroomSensitivity * TrackingOffsetRange_Vert * ( DeltaTime * FPS_FIX );
   fDeltaPitch -= aJoyBroomPitch * fJoyBroomSensitivity * 350.0 * DeltaTime;
   if ( bInvertBroomPitch )
   {
@@ -1081,6 +1087,8 @@ state PlayerWalking
     }
     Destination = Location + (vector(Rotation) * 100);
     DeterminePrimaryAnim();
+	// DD39: Fix shaking playing in the next CutScene
+	ViewShake(DeltaTime);
     if ( (LookForTarget != None) && (LookForTarget.bHidden ||  !CanSee(LookForTarget)) )
     {
       if (  !bLookingForTarget )

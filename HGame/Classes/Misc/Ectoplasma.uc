@@ -19,6 +19,8 @@ var ParticleFX fxHit;
 var ParticleFX fxReact;
 var Class<ParticleFX> fxHitClass;
 var Class<ParticleFX> fxReactClass;
+//DD39: bool to prevent re-growing if hit by Ecto spell
+var() bool bEctoRegrows;
 
 function PreBeginPlay()
 {
@@ -84,8 +86,12 @@ function bool HandleSpellEcto (optional baseSpell spell, optional Vector vHitLoc
 {
   if ( IsInState('stateHiding') )
   {
-    GotoState('stateShowing');
-    return True;
+    //DD39: check if bool is enabled, if so regrow
+	if ( bEctoRegrows )
+	{
+      GotoState('stateShowing');
+      return True;
+    }
   }
   return False;
 }
@@ -200,6 +206,11 @@ state() stateHiding
     }
     aSlimedHPawn = None;
     PlaySound(ShrinkSound,SLOT_Misc,0.69999999);
+	// DD39: Remove Ambient Sound
+	if ( bHidden && AmbientSound != None )
+	{
+		AmbientSound = None;
+	}
   }
   
   function EndState()
@@ -289,4 +300,7 @@ defaultproperties
     bBlockActors=False
 
     bBlockPlayers=False
+	
+	//DD39: custom bool
+	bEctoRegrows=True
 }

@@ -50,7 +50,7 @@ defaultproperties
 
     fxFlyParticleEffectClass=Class'HPParticle.Diffindo_Fly'
 
-    fxHitParticleEffectClass=Class'HPParticle.Diffindo_hit'
+    fxHitParticleEffectClass=Class'DD39Diffindo_hit'
 
     SpellIncantation="spells3"
 
@@ -58,4 +58,10 @@ defaultproperties
 
     // DrawType=0
 	DrawType=DT_None
+	
+	//DD39: hue change
+	LightHue=83
+	
+	//DD39: radius change
+	LightRadius=8
 }

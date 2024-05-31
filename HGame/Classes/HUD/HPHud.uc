@@ -21,6 +21,10 @@ var Array<HProp> propArray;
 var bool bHideStatus;
 var bool bHideHud;
 
+// DD39: Adding vars for Car Boost and Car Health
+var DD39CarBoostBar managerCarBoostBar;
+var DD39CarHealthBar managerCarHealthBar;
+
 // Metallicafan212:	Hide the hud items in game, better than using the glitch all the time
 exec function HideHud()
 {
@@ -114,6 +118,18 @@ function RegisterVendorManager (VendorManager VManager)
 {
   CurrVendorManager = VManager;
 }
+
+// DD39 (Start): Add register for Car Boost and Car Health bars
+function RegisterCarBoostBar (DD39CarBoostBar CarBoostBar)
+{
+  managerCarBoostBar = CarBoostBar;
+}
+
+function RegisterCarHealthBar (DD39CarHealthBar CarHealthBar)
+{
+	managerCarHealthBar = CarHealthBar;
+}
+// DD39 (End)
 
 function RegisterPickupProp (HProp Prop)
 {
@@ -321,6 +337,22 @@ simulated function PostRender (Canvas Canvas)
 				{
 					managerSpellSelector.RenderHudItemManager(Canvas,bInGameMenuUp,bFullCutMode,bHalfCutMode);
 				}
+				// DD39 (Start): Call RenderHudItem for Car Boost and Car Health bars, and the Muggle Meter
+				if ( managerCarBoostBar != None )
+				{
+					managerCarBoostBar.RenderHudItemManager(Canvas,bInGameMenuUp,bFullCutMode,bHalfCutMode);
+				}
+				
+				if ( managerCarHealthBar != None )
+				{
+					managerCarHealthBar.RenderHudItemManager(Canvas,bInGameMenuUp,bFullCutMode,bHalfCutMode);
+				}
+				
+				if ( managerMuggleMeter != None )
+				{
+					managerMuggleMeter.RenderHudItemManager(Canvas,bInGameMenuUp,bFullCutMode,bHalfCutMode);
+				}
+				// DD39 (End)
 			}
 		}
     

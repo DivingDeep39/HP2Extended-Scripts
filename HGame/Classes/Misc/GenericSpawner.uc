@@ -48,7 +48,12 @@ var int RandomNums;
 var int CurrentNum;
 var int CurrentNum1;
 var ESpellType eVulnerableToSpellSaved;
-
+//DD39: adding a string to set the global key
+var() string GlobalSpawnerKey;
+//DD39: bool to prevent items spawning after the spawner has finished
+var bool bEnded;
+//DD39: bool to prevent the spawning while the spawner is still opening/closing
+var bool bSpellHit;
 
 auto state stateStart
 {
@@ -64,25 +69,31 @@ begin:
     {
       LoopAnim(Anims.Start);
     }
+  //DD39: added check function for the global key to get
+  CheckGlobalSpawnerKey();
   //}
 }
 
 state stateEnd
-{
+{ 
 begin:
+  //DD39: the spawner is permanently marked as ended since it ran out of lives
+  bEnded=True;
   if ( bDestroable )
   {
     Destroy();
   }
   if ( Anims.End != 'None' )
   {
-    LoopAnim(Anims.End);
+	LoopAnim(Anims.End);
   }
 }
 
 state stateHitBySpell
 {
 begin:
+  //DD39: the spawner won't accept new spells in this state
+  bSpellHit=True;
   // eVulnerableToSpell = 0;
   eVulnerableToSpell = SPELL_None;
   if ( Lives > 0 )
@@ -151,6 +162,8 @@ begin:
       }
       PlayAnim(Anims.Closing);
       FinishAnim();
+	  //DD39: the spawner can receive new spells now
+	  bSpellHit=False;
     }
     eVulnerableToSpell = eVulnerableToSpellSaved;
     GotoState('stateStart');
@@ -161,6 +174,8 @@ begin:
     {
       TriggerEvent(EventName,None,None);
     }
+	//DD39: added function to set the global key
+	SetGlobalSpawnerKey();
     GotoState('stateEnd');
   }
 }
@@ -202,6 +217,35 @@ function PostBeginPlay()
   {
 	eVulnerableToSpell = SPELL_None;
   }
+}
+
+//DD39: added function to set the global key
+function SetGlobalSpawnerKey()
+{
+	if (GlobalSpawnerKey != "")
+		{
+			SetGlobalBool(GlobalSpawnerKey,true);
+		}
+}
+
+//DD39: added function to get the global key
+function CheckGlobalSpawnerKey()
+{
+	if (GetGlobalBool(GlobalSpawnerKey))
+	{
+		GotoState('stateEnd');
+		eVulnerableToSpell=SPELL_None;
+		/*if ( bDestroable )
+		{
+			Destroy();
+		}
+		if ( Anims.End != 'None' )
+		{
+			//GotoState('stateEnd');
+			LoopAnim(Anims.End);
+			eVulnerableToSpell=SPELL_None;
+		}*/
+	}
 }
 
 function FindBaseParticlePos()
@@ -318,59 +362,110 @@ function SpawnObject (int Index)
 }
 
 function bool HandleSpellFlipendo (optional baseSpell spell, optional Vector vHitLocation)
+//DD39: first the spawner checks if the spell is the correct one (eVulnerableToSpell)
+//then checks if it hasn't run out of lives (!bEnded)
+//and also if it's not currently handling a spell (!bSpellHit)
 {
-  Super.HandleSpellFlipendo(spell,vHitLocation);
-  GotoState('stateHitBySpell');
-  return True;
+  if ( eVulnerableToSpell == SPELL_Flipendo )
+  {
+	if (!bEnded && !bSpellHit)
+	{  
+		Super.HandleSpellFlipendo(spell,vHitLocation);
+		GotoState('stateHitBySpell');
+		return True;
+	}
+  }
 }
 
 function bool HandleSpellAlohomora (optional baseSpell spell, optional Vector vHitLocation)
 {
-  Super.HandleSpellAlohomora(spell,vHitLocation);
-  GotoState('stateHitBySpell');
-  return True;
+  if ( eVulnerableToSpell == SPELL_Alohomora )
+  {
+	if (!bEnded && !bSpellHit)
+	{ 
+		Super.HandleSpellAlohomora(spell,vHitLocation);
+		GotoState('stateHitBySpell');
+		return True;
+	}
+  }
 }
 
 function bool HandleSpellDiffindo (optional baseSpell spell, optional Vector vHitLocation)
 {
-  Super.HandleSpellDiffindo(spell,vHitLocation);
-  GotoState('stateHitBySpell');
-  return True;
+  if ( eVulnerableToSpell == SPELL_Diffindo )
+  {
+	if (!bEnded && !bSpellHit)
+	{ 
+		Super.HandleSpellDiffindo(spell,vHitLocation);
+		GotoState('stateHitBySpell');
+		return True;
+	}
+  }
 }
 
 function bool HandleSpellEcto (optional baseSpell spell, optional Vector vHitLocation)
 {
-  Super.HandleSpellEcto(spell,vHitLocation);
-  GotoState('stateHitBySpell');
-  return True;
+  if ( eVulnerableToSpell == SPELL_Ecto )
+  {
+	if (!bEnded && !bSpellHit)
+	{ 
+		Super.HandleSpellEcto(spell,vHitLocation);
+		GotoState('stateHitBySpell');
+		return True;
+	}
+  }
 }
 
 function bool HandleSpellLumos (optional baseSpell spell, optional Vector vHitLocation)
 {
-  Super.HandleSpellLumos(spell,vHitLocation);
-  GotoState('stateHitBySpell');
-  return True;
+  if ( eVulnerableToSpell == SPELL_Lumos )
+  {
+	if (!bEnded && !bSpellHit)
+	{  
+		Super.HandleSpellLumos(spell,vHitLocation);
+		GotoState('stateHitBySpell');
+		return True;
+	}
+  }
 }
 
 function bool HandleSpellRictusempra (optional baseSpell spell, optional Vector vHitLocation)
 {
-  Super.HandleSpellRictusempra(spell,vHitLocation);
-  GotoState('stateHitBySpell');
-  return True;
+  if ( eVulnerableToSpell == SPELL_Rictusempra )
+  {
+	if (!bEnded && !bSpellHit)
+	{  
+		Super.HandleSpellRictusempra(spell,vHitLocation);
+		GotoState('stateHitBySpell');
+		return True;
+	}
+  }
 }
 
 function bool HandleSpellSkurge (optional baseSpell spell, optional Vector vHitLocation)
 {
-  Super.HandleSpellSkurge(spell,vHitLocation);
-  GotoState('stateHitBySpell');
-  return True;
+  if ( eVulnerableToSpell == SPELL_Skurge )
+  {
+	if (!bEnded && !bSpellHit)
+	{   
+		Super.HandleSpellSkurge(spell,vHitLocation);
+		GotoState('stateHitBySpell');
+		return True;
+	}
+  }
 }
 
 function bool HandleSpellSpongify (optional baseSpell spell, optional Vector vHitLocation)
 {
-  Super.HandleSpellSpongify(spell,vHitLocation);
-  GotoState('stateHitBySpell');
-  return True;
+  if ( eVulnerableToSpell == SPELL_Spongify )
+  {
+	if (!bEnded && !bSpellHit)
+	{   
+		Super.HandleSpellSpongify(spell,vHitLocation);
+		GotoState('stateHitBySpell');
+		return True;
+	}
+  }
 }
 
 defaultproperties

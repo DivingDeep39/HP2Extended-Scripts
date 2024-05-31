@@ -5,7 +5,8 @@
 class firecrabSmall extends firecrab;
 
 const BOOL_DEBUG_AI= true;
-var() bool bMoveAround;
+// DD39: Removed and replaced with bCanStrafe.
+//var() bool bMoveAround;
 var spellFireSmall smallSpell;
 var Vector vTemp;
 var Vector vTemp2;
@@ -79,7 +80,8 @@ function Tick (float DeltaTime)
     TimeUntilNextFire -= DeltaTime;
     if ( TimeUntilNextFire < 0 )
     {
-      if ( (VSize(PlayerHarry.Location - Location) < fAttackRange) && PlayerCanSeeMe() )
+      //DD39: Added "&& !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet')"
+	  if ( (VSize(PlayerHarry.Location - Location) < fAttackRange) && PlayerCanSeeMe() && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
       {
         TimeUntilNextFire = TimeUntilNextFireDefault;
         GotoState('AttackHarry');
@@ -147,8 +149,25 @@ state stateHitBySpell
     PlayAnim('Look');
     FinishAnim();
     TimeUntilNextFire = TimeUntilNextFire + 1.0;
-    AmbientSound = WalkingSound;
-    GotoState('patrol');
+	// DD39: Cleared because other function sets it.
+    //AmbientSound = WalkingSound;
+	// DD39: Check if it's actually set to patrol.
+    if ( firstPatrolPointObjectName != '' )
+    {
+	  SetWalkingSound();
+	  GotoState('patrol');
+    } else {
+      TurnTo(Location + vMoveDir);
+      // DD39: Set in parent.
+      //vMoveDirRot = Rotation;
+      //vMoveDir = vector(vMoveDirRot);
+      // DD39: Cleared bcs no idea what it does.
+      //TurnTo(navP.Location);
+      // DD39: Cleared because other function sets it.
+      //AmbientSound = WalkingSound;
+      SetWalkingSound();
+      GotoState('patrol');
+    }
   }
 }
 
@@ -210,15 +229,34 @@ state DoFlip
   FinishAnim();
   LoopAnim('Idle');
   TimeUntilNextFire = TimeUntilNextFire + 1.0;
-  AmbientSound = WalkingSound;
+  // DD39: Cleared because other function sets it.
+  //AmbientSound = WalkingSound;
   fTimeOnBack = fTimeSpentOnBack;
+  // DD39: Check if it's actually set to patrol.
+  if ( firstPatrolPointObjectName != '' )
+  {
+	SetWalkingSound();
+	GotoState('patrol');
+  } else {
+  TurnTo(Location + vMoveDir);
+  // DD39: Set in parent.
+  //vMoveDirRot = Rotation;
+  //vMoveDir = vector(vMoveDirRot);
+  // DD39: Cleared bcs no idea what it does.
+  //TurnTo(navP.Location);
+  // DD39: Cleared because other function sets it.
+  //AmbientSound = WalkingSound;
+  SetWalkingSound();
   GotoState('patrol');
+  }
 }
 
 state AttackHarry
 {
   function Tick (float DeltaTime)
   {
+	// DD39: Follow Harry.
+	DesiredRotation.Yaw = rotator(playerHarry.Location - Location).Yaw;
   }
   
  begin:
@@ -232,19 +270,45 @@ state AttackHarry
   AmbientSound = None;
   if ( bPlayRoar == True )
   {
-    TurnTo(PlayerHarry.Location);
+    // DD39:
+	//TurnTo(PlayerHarry.Location);
     PlayRoarSound();
     PlayAnim('roar');
     FinishAnim();
   }
   
  wait:
-  TurnTo(Location + Location - PlayerHarry.Location);
+  // DD39: Disable the following.
+  Disable('tick');
+  //TurnTo(Location + Location - PlayerHarry.Location);
   Velocity = vect(0.00,0.00,0.00);
   Acceleration = vect(0.00,0.00,0.00);
   TurnTo(Location + Location - PlayerHarry.Location);
   Sleep(0.05);
-  GotoState('throwing');
+  // DD39: If Harry's in light of sight, go to throwing, otherwise patrol.
+  if ( LineOfSightTo(PlayerHarry) )
+  {
+	GotoState('throwing');
+  }
+  else
+  {
+    // DD39: Check if it's actually set to patrol.
+    if ( firstPatrolPointObjectName != '' )
+	{
+		GotoState('patrol');
+	} else {
+	  TurnTo(Location + vMoveDir);
+	  // DD39: Set in parent.
+	  //vMoveDirRot = Rotation;
+	  //vMoveDir = vector(vMoveDirRot);
+	  // DD39: Cleared bcs no idea what it does.
+	  //TurnTo(navP.Location);
+	  // DD39: Cleared because other function sets it.
+      //AmbientSound = WalkingSound;
+	  SetWalkingSound();
+	  GotoState('patrol');
+	}
+  }
   goto ('Wait');
 }
 
@@ -274,6 +338,9 @@ state throwing
   }
   
  begin:
+  // DD39: Added Acceleration and Velocity.
+  Velocity = vect(0.00,0.00,0.00);
+  Acceleration = vect(0.00,0.00,0.00);
   PlaySound(Sound'firecrab_preattack',SLOT_None);
   PlayAnim('preattack');
   FinishAnim();
@@ -294,7 +361,8 @@ state throwing
     PlaySound(AttackSound,SLOT_None);
     PlayAnim('Attack');
     FinishAnim();
-    if (  !LineOfSightTo(PlayerHarry) && (bMoveAround == True) )
+	// DD39: Replaced " ( bMoveAround == True ) " with " bCanStrafe".
+    if (  !LineOfSightTo(PlayerHarry) && bCanStrafe )
     {
       TurnTo(Location + (Location - PlayerHarry.Location));
       vTemp = Normal(PlayerHarry.Location - Location);
@@ -338,15 +406,55 @@ state throwing
   }
   if ( iNumShots <= 0 )
   {
-    GotoState('strafeAround');
+    // DD39: Added additional check.
+	if ( bCanStrafe )
+	{
+	  GotoState('strafeAround');
+	} else {
+	  if ( VSize(PlayerHarry.Location - Location) < fAttackRange )
+      {
+        iNumShots = iNumShotsBetweenPreAttack;
+        Goto('begin');
+	  } else {
+	    Sleep(0.8);
+		// DD39: Check if it's actually set to patrol.
+		if ( firstPatrolPointObjectName != '' )
+		{
+			SetWalkingSound();
+			GotoState('patrol');
+		} else {
+          TurnTo(Location + vMoveDir);
+		  // DD39: Set in parent.
+          //vMoveDirRot = Rotation;
+          //vMoveDir = vector(vMoveDirRot);
+		  // DD39: Cleared bcs no idea what it does.
+          //TurnTo(navP.Location);
+          // DD39: Cleared because other function sets it.
+		  //AmbientSound = WalkingSound;
+		  SetWalkingSound();
+          GotoState('patrol');
+	    }
+      }
+	}
   } else {
     Sleep(0.8);
-    TurnTo(Location + vMoveDir);
-    vMoveDirRot = Rotation;
-    vMoveDir = vector(vMoveDirRot);
-    TurnTo(navP.Location);
-    AmbientSound = WalkingSound;
-    GotoState('patrol');
+	// DD39: Check if it's actually set to patrol.
+    if ( firstPatrolPointObjectName != '' )
+	{
+		SetWalkingSound();
+		GotoState('patrol');
+	} else {
+      TurnTo(Location + vMoveDir);
+	  // DD39: Set in parent.
+      //vMoveDirRot = Rotation;
+      //vMoveDir = vector(vMoveDirRot);
+	  // DD39: Cleared bcs no idea what it does.
+      //TurnTo(navP.Location);
+      // DD39: Cleared because other function sets it.
+      //AmbientSound = WalkingSound;
+	  SetWalkingSound();
+      GotoState('patrol');
+    }
   }
 }
 
@@ -364,8 +472,9 @@ state strafeAround
   }
   
  begin:
-  if ( bCanStrafe == True )
-  {
+ // DD39: Removed because added check in state throwing.
+  //if ( bCanStrafe == True )
+  //{
     TurnTo(Location + Location - PlayerHarry.Location);
     vTemp = Normal(PlayerHarry.Location - Location);
     vTemp2 = Location Cross PlayerHarry.Location;
@@ -408,25 +517,37 @@ state strafeAround
     Velocity = vect(0.00,0.00,0.00);
     Acceleration = vect(0.00,0.00,0.00);
     TurnTo(Location + Location - PlayerHarry.Location);
-  }
+  //}
   if ( VSize(PlayerHarry.Location - Location) < fAttackRange )
   {
     TurnTo(Location + Location - PlayerHarry.Location);
     GotoState('throwing');
   } else {
     Sleep(0.3);
-    TurnTo(Location + vMoveDir);
-    vMoveDirRot = Rotation;
-    vMoveDir = vector(vMoveDirRot);
-    TurnTo(navP.Location);
-    AmbientSound = WalkingSound;
-    GotoState('patrol');
+    // DD39: Check if it's actually set to patrol.
+    if ( firstPatrolPointObjectName != '' )
+	{
+		SetWalkingSound();
+		GotoState('patrol');
+	} else {
+      TurnTo(Location + vMoveDir);
+	  // DD39: Set in parent.
+      //vMoveDirRot = Rotation;
+      //vMoveDir = vector(vMoveDirRot);
+	  // DD39: Cleared bcs no idea what it does.
+      //TurnTo(navP.Location);
+      // DD39: Cleared because other function sets it.
+      //AmbientSound = WalkingSound;
+	  SetWalkingSound();
+      GotoState('patrol');
+    }
   }
 }
 
 defaultproperties
 {
-    bMoveAround=True
+    // DD39: Removed.
+	//bMoveAround=True
 
     NormalSpeed=100.00
 

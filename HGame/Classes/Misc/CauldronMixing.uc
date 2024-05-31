@@ -56,6 +56,12 @@ event Bump (Actor Other)
 {
   local int nGameState;
 
+//DD39: prevent other actors from brewing (like gnomes)
+  if (Other != PlayerHarry)
+  {
+	return;
+  }
+  
   nGameState = PlayerHarry.ConvertGameStateToNumber();
   if ( nGameState < nPOTIONS_AVAILABLE_STATE )
   {
@@ -184,6 +190,24 @@ ignores Bump;
   
 }
 
+//DD39: mucus is spawned in Harry and then moved to the HUD
+function MucusFromHarryToHUD()
+{
+  propTemp = HProp(FancySpawn(Class'FlobberwormMucus',,,PlayerHarry.Location));
+  //propTemp.bHidden = bHidden;
+  propTemp.SetLocation(vFlobberHudLoc);
+  //propTemp.bHidden = !bHidden;
+}
+
+//DD39: bark is spawned in Harry and then moved to the HUD
+function BarkFromHarryToHud()
+{
+  propTemp = HProp(FancySpawn(Class'WiggentreeBark',,,PlayerHarry.Location));
+  //propTemp.bHidden = bHidden;
+  propTemp.SetLocation(vFlobberHudLoc);
+  //propTemp.bHidden = !bHidden;
+}
+
 state Mixing
 {
 ignores Bump;
@@ -202,17 +226,29 @@ begin:
   {
     vFlobberHudLoc = sgPotionIngr.GetItemLocation(Class'StatusItemFlobberMucus',False);
     propTemp = HProp(FancySpawn(Class'FlobberwormMucus',,,vFlobberHudLoc));
+	//DD39: if the HUD's position is oob and mucus can't fit in the location
+	if (PropTemp == None)
+	  {
+	    MucusFromHarryToHUD();
+	  }
     propTemp.fMinFlyToHudScale = 0.1;
     propTemp.fMaxFlyToHudScale = 0.4;
     propTemp.DoDropOffProp(vTopOfCauldron,True);
     Sleep(0.1);
+	  
     vWiggenHudLoc = sgPotionIngr.GetItemLocation(Class'StatusItemWiggenBark',False);
     propTemp = HProp(FancySpawn(Class'WiggentreeBark',,,vFlobberHudLoc));
+	//DD39: if the HUD's position is oob and bark can't fit in the location
+	if (PropTemp == None)
+	  {
+	    BarkFromHarryToHud();
+	  }
     propTemp.fMinFlyToHudScale = 0.1;
     propTemp.fMaxFlyToHudScale = 0.4;
     propTemp.DoDropOffProp(vTopOfCauldron,True);
     Sleep(0.1);
   }
+  
   PlayerHarry.DoPotionMixingStir();
   Sleep(1.0);
 
@@ -248,5 +284,8 @@ defaultproperties
     CollisionRadius=15.00
 
     CollisionHeight=100.00
+	
+	//DD39: Disable camera collision
+	bBlockCamera=False
 
 }

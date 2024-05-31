@@ -26,6 +26,9 @@ const nHEALTH_X= 4;
 const BOTTOM_OFFSET= 11;
 const TOP_OFFSET= 1;
 
+//DD39: new Harry var
+var harry PlayerHarry;
+
 event PreBeginPlay()
 {
 	local string strHealthBorder;
@@ -41,6 +44,9 @@ event PreBeginPlay()
 	textureHealthBorder 		= Texture(DynamicLoadObject(strHealthBorder,Class'Texture'));
 	textureHealthBlack 			= Texture(DynamicLoadObject(strHealthBlack,Class'Texture'));
 	textureHealthOrangeInside 	= Texture(DynamicLoadObject(strHealthOrangeInside,Class'Texture'));
+	
+	// DD39: Find Harry in the level
+	PlayerHarry = harry(Level.PlayerHarryActor);
 }
 
 function IncrementCount (int nNum)
@@ -106,6 +112,12 @@ function DrawItem (Canvas Canvas, int nCurrX, int nCurrY, float fScaleFactor)
 	
 	// Metallicafan212:	Scale by the height as well
 	fScaleFactor *= GetHScale(Canvas);
+	
+	//DD39: used for the Flying Car level, don't draw the health bar
+	if ( PlayerHarry.bHideHealth == True )
+	{
+		return;
+	}
 	
 	// Omega: Previous equations: Add nCurrX and Y to handle 4:3-ness and anchoring properly
 	//nX = 5 * fScaleFactor;

@@ -46,6 +46,9 @@ function PostBeginPlay()
   iNumSpellHitsToFlip = iNumSpellHitsToFlipDefault;
   fHighestZ = Location.Z;
   fTimeOnBack = fTimeSpentOnBack;
+  // DD39: Setting vMoveDirRot and vMoveDir.
+  vMoveDirRot = Rotation;
+  vMoveDir = vector(vMoveDirRot);
 }
 
 function playHitSound()
@@ -92,6 +95,17 @@ function playFlipSound()
   PlaySound(flipSound,SLOT_None,RandRange(0.8,1.0),,10000.0,RandRange(0.80,1.20),,False);
 }
 
+// DD39: Set AmbientSound if the Fire Crab is actually patrolling.
+function SetWalkingSound()
+{
+  if ( firstPatrolPointObjectName != '' )
+  {
+    AmbientSound = WalkingSound;
+  } else{
+    AmbientSound = None;
+  }
+}
+
 event TakeDamage (int Damage, Pawn EventInstigator, Vector HitLocation, Vector Momentum, name DamageType)
 {
   if ( DamageType == 'ZonePain' )
@@ -103,7 +117,8 @@ event TakeDamage (int Damage, Pawn EventInstigator, Vector HitLocation, Vector M
 function PlayerCutCapture()
 {
   //if (  !IsInState('stayFlipped') )
-  if (  !IsInState('stayFlipped') &&  !IsInState('DoFlip') ) //AdamJD:	From the demo/s
+  //DD39: Added "!IsInState('stateHitBySpell') &&"
+  if (  !IsInState('stateHitBySpell') && !IsInState('stayFlipped') &&  !IsInState('DoFlip') ) //AdamJD:	From the demo/s
   {
     GotoState('CutIdle');
   }
@@ -119,8 +134,11 @@ begin:
 function PlayerCutRelease()
 {
   TimeUntilNextFire = TimeUntilNextFireDefault;
-  // eVulnerableToSpell = 22;
-  eVulnerableToSpell = SPELL_Rictusempra;
+  //DD39: Added same checks as in PlayerCutCapture()
+  if (  !IsInState('stateHitBySpell') && !IsInState('stayFlipped') &&  !IsInState('DoFlip') )
+  {
+    eVulnerableToSpell = SPELL_Rictusempra;
+  }
 }
 
 function bool OnALedge (Vector Loc)

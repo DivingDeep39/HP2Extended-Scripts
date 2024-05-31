@@ -4,6 +4,14 @@
 
 class CreatureGenerator extends HPawn;
 
+// DD39: Added enum to set bools.
+enum ESetBool
+{
+	ignore,
+	set_False,
+	set_True
+};
+
 const MAX_CREATURES= 20;
 const NUM_BASE_CHARS= 16;
 var() Class<HPawn> BaseCreatureToSpawn[16];
@@ -32,6 +40,11 @@ var float fCurrTime;
 var float fWaitTime;
 var bool bGenerateCreature;
 var bool bOff;
+
+// DD39: New vars for creature collision.
+var() ESetBool bSetBlockActors;
+var() ESetBool bSetBlockPlayers;
+var() ESetBool bSetCollideActors;
 
 
 function PostBeginPlay()
@@ -172,6 +185,11 @@ function GenerateCreature()
   local int I;
   local int J;
   local bool IsSoftRendering;
+  
+  // DD39: New local vars.
+  local bool bNBlockActors;
+  local bool bNBlockPlayers;
+  local bool bNCollActors;
 
   IsSoftRendering = PlayerHarry.IsSoftwareRendering();
   if ( IsSoftRendering )
@@ -227,6 +245,43 @@ function GenerateCreature()
     Log("CreatureGenerator: couldn't spawn the baseCreature:" $ string(BaseCreatureToSpawn[I]));
     return;
   }
+  
+  // DD39: Set the new collision vars to creatures.
+  if ( bSetBlockActors != ignore || bSetBlockPlayers != ignore || bSetCollideActors != ignore )
+  {
+		if ( bSetCollideActors == set_True )
+		{
+			bNCollActors = True;
+		}
+		else if ( bSetCollideActors == set_False )
+		{
+			bNCollActors = False;
+		}
+		else bNCollActors = A.bCollideActors;
+		
+		if ( bSetBlockActors == set_True )
+		{
+			bNBlockActors = True;
+		}
+		else if ( bSetBlockActors == set_False )
+		{
+			bNBlockActors = False;
+		}
+		else bNBlockActors = A.bBlockActors;
+		
+		if ( bSetBlockPlayers == set_True )
+		{
+			bNBlockPlayers = True;
+		}
+		else if ( bSetBlockPlayers == set_False )
+		{
+			bNBlockPlayers = False;
+		}
+		else bNBlockPlayers = A.bBlockPlayers;
+			
+		A.SetCollision(bNCollActors,bNBlockActors,bNBlockPlayers);
+  }
+  
   // A.ePatrolType = 0;
   A.ePatrolType = PATROLTYPE_PATROL_POINTS;
   A.firstPatrolPointObjectName = FirstPP.Name;
@@ -239,12 +294,14 @@ function GenerateCreature()
   {
     A.bPlayRunAnim = True;
   }
+  
   H = HChar(A);
   H.bUseBumpLine = True;
   H.bBumpCaptureHarry = bCaptureHarry;
   H.BumpLineSet = BaseBumpLineSet[I];
   // J = 0;
   // if ( J < 20 )
+  
   for(J = 0; J < MAX_CREATURES; J++)
   {
     if ( Creatures[J] == None )

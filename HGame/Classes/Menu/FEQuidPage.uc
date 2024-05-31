@@ -350,7 +350,11 @@ function Created()
     QArmorButton.DownSound= None;
     NimbusButton= HGameButton(CreateAlignedControl(Class'HGameButton',570.0,5.0,64.0,64.0,,AT_Center));
     NimbusButton.ToolTipString= GetLocalFEString("Main_Menu_0013");
-    NimbusButton.UpTexture= Texture(DynamicLoadObject("HP2_Menu.Hud.HP2Nimbus2001",Class'Texture'));
+	
+	//DD39: New icon
+    //NimbusButton.UpTexture= Texture(DynamicLoadObject("HP2_Menu.Hud.HP2Nimbus2001",Class'Texture'));
+	NimbusButton.UpTexture= Texture(DynamicLoadObject("Extended_Textures.Icons.HP2Nimbus2001",Class'Texture'));
+	
     NimbusButton.OverTexture= NimbusButton.UpTexture;
     NimbusButton.DownTexture= NimbusButton.OverTexture;
     NimbusButton.DownSound= None;
@@ -360,8 +364,24 @@ function Created()
 
 function LaunchQuidditch()
 {
-  FEBook(book).CloseBook();
-  harry(Root.Console.Viewport.Actor).LoadLevel("Quidditch.unr");
+	//DD39: Added local vars
+	local PlayerPawn A;
+	local QuidditchKiosk Kiosk;
+  
+	A = Root.Console.Viewport.Actor;
+
+	//DD39: Find a Kiosk in the map
+	ForEach A.AllActors (Class'QuidditchKiosk',Kiosk)
+	{
+		break;
+	}
+  
+	//DD39: No Kiosk, no party (prevents Quidditch Warping)
+	if ( Kiosk != None )
+	{
+		FEBook(book).CloseBook();
+		Harry(A).LoadLevel("Quidditch.unr");
+	}
 }
 
 function WindowDone (UWindowWindow W)

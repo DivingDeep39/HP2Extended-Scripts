@@ -17,7 +17,9 @@ const strBAR_SEEKER_RAV= "HP2_Menu.Icon.HP2_QuidBarRave";
 const strBAR_SEEKER_GRY= "HP2_Menu.Icon.HP2_QuidBarGryf";
 const strBAR_PEEVES= "HP2_Menu.Icon.HP2EnemyHealthPeeves";
 const strBAR_DUELLIST= "HP2_Menu.Icon.HP2EnemyHealthWizard";
-const strBAR_BASILISK= "HP2_Menu.Icon.HP2EnemyHealthBasilisk";
+// DD39: New icon:
+//const strBAR_BASILISK= "HP2_Menu.Icon.HP2EnemyHealthBasilisk";
+const strBAR_BASILISK= "Extended_Textures.Icons.HP2EnemyHealthBasilisk";
 const strBAR_ARAGOG= "HP2_Menu.Icon.HP2EnemyHealthAragog";
 var Texture textureBarFull;
 var Texture textureBarEmpty;

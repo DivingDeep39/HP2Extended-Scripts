@@ -29,6 +29,20 @@ function bool harryIsStill()
   return False;
 }
 
+//DD39: Check if Harry doesn't have the high ground
+function bool harryIsInRange()
+{
+  if ( VSize2D(PlayerHarry.Location - Location) <= 30 )
+  {
+    //DD39: Check if the spider is between two heights
+    if ( (Location.Z > (PlayerHarry.Location.Z - PlayerHarry.CollisionHeight - 0.5)) && (Location.Z < (PlayerHarry.Location.Z + PlayerHarry.CollisionHeight)) )
+    {
+	  return True;
+    }
+  }
+  return False;
+}
+
 state preAttackCheck
 {
 begin:
@@ -100,11 +114,17 @@ state Attack
   }
   Velocity = vect(0.00,0.00,0.00);
   Acceleration = vect(0.00,0.00,0.00);
-  if ( harryIsStill() == False )
+  //DD39: Added additional checks
+  if ( harryIsStill() == True )
   {
-    GotoState('ChaseHarry');
+    if ( harryIsInRange() == True )
+    {
+	  GotoState('AttachToHarry');
+	}
+	//DD39: Added to avoid spiders going crazy
+    GotoState('WalkAway');
   } else {
-    GotoState('AttachToHarry');
+	GotoState('ChaseHarry');
   }
 }
 
@@ -212,7 +232,7 @@ defaultproperties
 
     attackSpeed=105.00
 
-    fDamageAmount=1.00
+	fDamageAmount=1.00
 
     MaxStepHeight=5.00
 

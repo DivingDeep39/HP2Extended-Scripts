@@ -33,4 +33,7 @@ defaultproperties
     Mesh=SkeletalMesh'HProps.skQuidArmorMesh'
 
     bBlockPlayers=False
+	
+	//DD39: now it spins
+	bRotateToDesired=False
 }

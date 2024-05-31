@@ -1030,6 +1030,8 @@ state StateBossCam
 		rDestRotation += rBossRotationOffset;
 		UpdateRotationUsingVectors(fTimeDelta);
 		UpdatePosition(fTimeDelta);
+		//DD39: Fix camera not updating distance from player after hitting a wall
+		UpdateDistance(fTimeDelta);
 	}
 }
 

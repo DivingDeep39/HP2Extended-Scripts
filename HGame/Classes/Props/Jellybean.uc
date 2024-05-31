@@ -10,6 +10,8 @@ var float fPickupFlyTime;
 var(JellyBeand) bool bFallsToGround;
 var int iSkinTexture;
 var bool bInitialized;
+//DD39: adding a string to set the global key
+var() string GlobalJellybeanKey;
 
 function PreBeginPlay()
 {
@@ -74,6 +76,38 @@ function PreBeginPlay()
     break;
     default:
   }
+}
+
+//DD39: added PostBeginPlay to check for the global key to get
+event PostBeginPlay()
+{
+  Super.PostBeginPlay();
+  CheckGlobalJellybeanKey();
+}
+
+//DD39: added function to set the global key
+function SetGlobalJellybeanKey()
+{
+	if (GlobalJellybeanKey != "")
+		{
+			SetGlobalBool(GlobalJellybeanKey,true);
+		}
+}
+
+//DD39: added function to get the global key
+function CheckGlobalJellybeanKey()
+{
+	if (GetGlobalBool(GlobalJellybeanKey))
+	{
+		Destroy();
+	}	
+}
+
+//DD39: calling function from HProp to add function to get the global key
+function DoPickupProp()
+{
+  Super.DoPickupProp();
+  SetGlobalJellybeanKey();
 }
 
 function Touch (Actor Other)
@@ -145,4 +179,7 @@ defaultproperties
     bBlockCamera=False
 
     bBounce=True
+	
+	//DD39: now it spins
+	bRotateToDesired=False
 }

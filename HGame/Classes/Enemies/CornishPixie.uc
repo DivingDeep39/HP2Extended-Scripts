@@ -37,6 +37,18 @@ var PatrolPoint pP;
 var() float StayOnSplineDefault;
 var float StayOnSpline;
 var() float StopAttackDistance;
+//DD39: bCapturable = Pixie idles when a cutscene starts
+var() bool bCapturable;
+//DD39: bDontBlockInAttack: Pixie won't block Harry during attacks (Adv11b fix)
+var() bool bDontBlockInAttack;
+//DD39: bHoldOff = bool to not attack Harry in certain situations
+var bool bHoldOff;
+//DD39: bFXSpawned = bool to signal when ambient sounds and emitter need to spawn
+var bool bFXSpawned;
+//DD39: bTriggered = bool for when Pixie is triggered
+var bool bTriggered;
+//DD39: bCollOff = bool for when collision is disabled
+var bool bCollOff;
 
 function PreBeginPlay()
 {
@@ -74,7 +86,32 @@ function PostBeginPlay()
 
 function PlayerCutCapture()
 {
-  GotoState('CutIdle');
+	//DD39: If dying or waiting for trigger, ignore
+	if ( bStunned || IsInState('stateDying') || waitForTrigger )
+	{
+	  return;
+	}
+	//DD39: Hold Off from attacking
+    bHoldOff = True;
+	//DD39: Added Collision Check
+	if ( !bCollOff )
+	{
+	  //DD39: Disable collision so they can fly through you
+	  SetCollision(True,False,False);
+	  //DD39: Collision check is enabled
+	  bCollOff = True;
+	}
+	//DD39: If capturable or not
+	if ( bCapturable && !bStunned && !IsInState('stateDying') )
+	{
+      GotoState('CutIdle');
+    } else {
+	  if ( !IsInState('stateLoopSplinePath') && !IsInState('stateRunAway') && !IsInState('stateHitByRictusempra') && !IsInState('Triggered') )
+	  {
+		LoopAnim('Fly');
+		GotoState('stateLoopSplinePath');
+	  }
+	}
 }
 
 state CutIdle
@@ -87,8 +124,18 @@ begin:
 
 function PlayerCutRelease()
 {
-  LoopAnim('Fly');
-  GotoState('stateLoopSplinePath');
+  //DD39: if dying or waiting for trigger, ignore
+  if ( bStunned || IsInState('stateDying') || waitForTrigger )
+  {
+    return;
+  }
+  //DD39: time everyone's sighting
+  StayOnSpline = StayOnSplineDefault;
+  if ( bCapturable && !bStunned && !IsInState('stateDying') )
+  {
+	LoopAnim('Fly');
+    GotoState('stateLoopSplinePath');
+  }
 }
 
 function Timer()
@@ -99,7 +146,18 @@ function Timer()
 function bool HandleSpellRictusempra (optional baseSpell spell, optional Vector vHitLocation)
 {
   Super.HandleSpellRictusempra(spell,vHitLocation);
-  GotoState('stateHitByRictusempra');
+  //DD39: moved part of stateHitByRictusempra in here to split the state in two
+  DestroyControllers();
+  PlaySound(Sound'SPI_hit',SLOT_None,RandRange(0.89999998,1.0),,2000.0,RandRange(1.60,2.20),,False);
+  if (  --numAttacks <= 0 )
+  {
+    bStunned = True;
+	GotoState('stateDying');
+  } else {
+    Velocity = vect(0.00,0.00,0.00);
+    Acceleration = vect(0.00,0.00,0.00);
+    GotoState('stateHitByRictusempra');
+  }
   return True;
 }
 
@@ -121,7 +179,8 @@ function bool GoAfterHarry()
 
   bRet = False;
   vVectorToHarry = PlayerHarry.Location - Location;
-  if ( VSize(vVectorToHarry) < SightRadius &&  !IsInState('CutIdle') )
+  //DD39: make your checks
+  if ( VSize(vVectorToHarry) < SightRadius && !bHoldOff && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') && PlayerCanSeeMe() )
   {
     bRet = True;
   }
@@ -158,7 +217,11 @@ function playTalkSound()
     talkSound = Sound'PIX_talk_06';
     break;
   }
-  PlaySound(talkSound,SLOT_None,RandRange(0.8,1.0),,1000.0,RandRange(0.80,1.20),,False);
+  //DD39: don't talk while in cutscenes
+  if ( !PlayerHarry.bIsCaptured )
+  {
+    PlaySound(talkSound,SLOT_None,RandRange(0.8,1.0),,1000.0,RandRange(0.80,1.20),,False);
+  }
 }
 
 function playAttackSound()
@@ -276,11 +339,22 @@ state stateLoopSplinePath
   function BeginState()
   {
     LoopAnim('Fly');
-    AmbientSound = pixieLoopSound;
     StayOnSpline = StayOnSplineDefault;
     // eVulnerableToSpell = 0;
-	eVulnerableToSpell = SPELL_None;
-    fxFlyParticleEffect = Spawn(fxFlyParticleEffectClass,,,Location);
+	//eVulnerableToSpell = SPELL_None;
+	//DD39: Be castable from the start
+	eVulnerableToSpell = SPELL_Rictusempra;
+	//DD39: Make checks
+	if ( PlayerHarry.bIsCaptured || PlayerHarry.IsInState('CelebrateCardSet') )
+	{
+	  bHoldOff = True;
+	  
+	  if ( !bCollOff )
+	  {
+	    SetCollision(True,False,False);
+		bCollOff = True;
+	  }
+	}
   }
   
   function EndState()
@@ -296,16 +370,50 @@ state stateLoopSplinePath
     bCollideWorld = True;
     bAlignBottom = False;
     fxFlyParticleEffect.Shutdown();
+	//DD39: Set the flag
+	bFXSpawned = False;
   }
   
   function Tick (float DeltaTime)
   {
     Super.Tick(DeltaTime);
+	
+	//DD39: Make your checks for effects
+	if ( !PlayerHarry.bIsCaptured || !PlayerHarry.IsInState('CelebrateCardSet') )
+	{
+	  if ( !bFXSpawned )
+      {
+	    bFXSpawned = True;
+	    AmbientSound = pixieLoopSound;
+	    fxFlyParticleEffect = Spawn(fxFlyParticleEffectClass,,,Location);
+	  }
+	}
+	
+	if ( PlayerHarry.bIsCaptured || PlayerHarry.IsInState('CelebrateCardSet') )
+	{
+	  if ( bFXSpawned )
+	  {
+	    bFXSpawned = False;
+	    AmbientSound = None;
+	    fxFlyParticleEffect.Shutdown();
+	  }
+	}
+
     StayOnSpline -= DeltaTime;
     if ( StayOnSpline < 0 )
     {
-      // eVulnerableToSpell = 22;
-	  eVulnerableToSpell = SPELL_Rictusempra;
+      //DD39: enable collision
+	  if ( bCollOff && !PlayerHarry.bIsCaptured && !PlayerHarry.IsInState('CelebrateCardSet') )
+	  {
+        //DD39: bool is disabled
+	    bCollOff = False;
+		SetCollision(True,False,True);
+	  }
+	  // eVulnerableToSpell = 22;
+	  //DD39: See BeginState
+	  //eVulnerableToSpell = SPELL_Rictusempra;
+	  //DD39: They can attack now
+	  bHoldOff = False;
       if ( GoAfterHarry() )
       {
         GotoState('stateMoveTowardHarry');
@@ -318,7 +426,8 @@ state stateLoopSplinePath
         }
       }
     }
-    if ( VSize(PlayerHarry.Location - Location) < encroachRadius )
+	//DD39: Make checks before going into attack state
+    if ( VSize(PlayerHarry.Location - Location) < encroachRadius && !bHoldOff && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
     {
       GotoState('stateAttackHarry');
     }
@@ -335,6 +444,24 @@ state stateLoopSplinePath
 
 state stateMoveTowardHarry
 {
+  //DD39: Added BeginState
+  function BeginState()
+  {
+    bHoldOff = False;
+	
+	if ( bCollOff && !bDontBlockInAttack )
+    {
+      bCollOff = False;
+	  SetCollision(True,False,True);
+    }
+	
+    if ( !bCollOff && bDontBlockInAttack )
+    {
+	  SetCollision(True,False,False);
+	  bCollOff = True;
+    }
+  }
+
 begin:
   if ( BOOL_DEBUG_AI )
   {
@@ -349,16 +476,36 @@ begin:
 
 state stateAttackHarry
 {
+  //DD39: Added BeginState
+  function BeginState()
+  {
+	bHoldOff = False;
+	
+	if ( bCollOff && !bDontBlockInAttack )
+    {
+      bCollOff = False;
+	  SetCollision(True,False,True);
+    }
+	
+	if ( !bCollOff && bDontBlockInAttack )
+    {
+	  SetCollision(True,False,False);
+	  bCollOff = True;
+    }
+  }
+  
   function Tick (float DeltaTime)
   {
     Super.Tick(DeltaTime);
     if ( VSize(Location - PlayerHarry.Location) <= PlayerHarry.CollisionRadius + CollisionRadius + 5 )
     {
-      if ( baseHUD(PlayerHarry.myHUD).bCutSceneMode == False )
+      //DD39: Do your checks
+	  if ( !bHoldOff && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
       {
         GotoState('DamageHarry');
       }
     }
+	
     if ( VSize(vHome - PlayerHarry.Location) > StopAttackDistance )
     {
       Velocity = vect(0.00,0.00,0.00);
@@ -370,7 +517,8 @@ state stateAttackHarry
  begin:
   LoopAnim('Fly');
  loop:
-  vHarryAttackPosition = PlayerHarry.Location + (vector(PlayerHarry.Rotation) * (PlayerHarry.CollisionRadius + CollisionRadius + 5)) + Vec(0.0,0.0,-25.0);
+  //DD39: Replaced "+ Vec(0.0,0.0,-25.0)" with "+ Vec(0.0,0.0,5.0)" to help them bite more easily
+  vHarryAttackPosition = PlayerHarry.Location + (vector(Rotation) * (PlayerHarry.CollisionRadius + CollisionRadius + 5)) + Vec(0.0,0.0,5.0);
   MoveTo(vHarryAttackPosition);
   Sleep(0.1);
   goto ('Loop');
@@ -385,13 +533,38 @@ begin:
   Sleep(0.3);
   playBiteSound();
   Sleep(0.1);
-  PlayerHarry.TakeDamage(fDamageAmount,Pawn(Owner),Location,Velocity * 1,'Pixie');
+  //DD39: Check distance before dealing damage
+  if ( VSize(Location - PlayerHarry.Location) <= PlayerHarry.CollisionRadius + CollisionRadius + 5 )
+  {
+    PlayerHarry.TakeDamage(fDamageAmount,Pawn(Owner),Location,Velocity * 1,'Pixie');
+  }
   GotoState('stateRunAway');
 }
 
 state stateRunAway
 {
-begin:
+  //DD39: Added BeginState
+  function BeginState()
+  {
+	bCollideWorld = False;
+    bAlignBottom = True;
+    bHoldOff = True;
+   
+    if ( !bCollOff )
+    {
+      SetCollision(True,False,False);
+	  bCollOff = True;
+    }
+	AirSpeed = AirSpeed * 1.25;
+  }
+  
+  //DD39: Added EndState
+  function EndState()
+  {
+	AirSpeed = AirSpeed / 1.25;
+  }
+ 
+ begin:
   if ( BOOL_DEBUG_AI )
   {
     PlayerHarry.ClientMessage("" $ string(Name) $ ": stateRunAway");
@@ -418,19 +591,54 @@ begin:
   GotoState('stateLoopSplinePath');
 }
 
+
+//DD39: This only handles actual stunning
 state stateHitByRictusempra
 {
-begin:
-  DestroyControllers();
-  PlaySound(Sound'SPI_hit',SLOT_None,RandRange(0.89999998,1.0),,2000.0,RandRange(1.60,2.20),,False);
-  if ( BOOL_DEBUG_AI )
+  //DD39: Added BeginState
+  function BeginState()
   {
-    PlayerHarry.ClientMessage("" $ string(Name) $ ": stateHitByRictusempra");
+    bHoldOff = True;
+	
+	if ( bCollOff )
+	{
+	  bCollOff = False;
+	  SetCollision(True,False,True);
+	}
   }
-  if (  --numAttacks <= 0 )
+  //DD39: Added EndState
+  function EndState()
   {
-    SetTimer(timeStunned,False);
-    bStunned = True;
+    if ( !bCollOff && ( PlayerHarry.bIsCaptured || PlayerHarry.IsInState('CelebrateCardSet') ) )
+	 {
+	   SetCollision(True,False,False);
+	   bCollOff = True;
+	 }
+  }
+  
+begin:
+
+	Velocity = vect(0.00,0.00,0.00);
+    Acceleration = vect(0.00,0.00,0.00);
+    playHitSound();
+    PlayAnim('stun');
+    FinishAnim();
+    LoopAnim('Idle');
+    Sleep(0.1);
+	//DD39: Make checks
+	if ( bCapturable && ( PlayerHarry.bIsCaptured || PlayerHarry.IsInState('CelebrateCardSet') ) )
+	{
+	  GotoState('CutIdle');
+	} else {
+      GotoState('stateRunAway');
+	}
+}
+
+//DD39: this only handles death
+state stateDying
+{
+  begin:
+	SetTimer(timeStunned,False);
     fxFlyParticleEffect.Shutdown();
     SetCollision(False,False,False);
     SetCollisionSize(Default.CollisionRadius / 5, Default.CollisionHeight - Default.CollisionHeight - 1);
@@ -449,18 +657,7 @@ begin:
     bCollideWorld = True;
     fxHit.Shutdown();
     playAttackSound();
-    // SetPhysics(1);
 	SetPhysics(PHYS_Walking);
-  } else {
-    Velocity = vect(0.00,0.00,0.00);
-    Acceleration = vect(0.00,0.00,0.00);
-    playHitSound();
-    PlayAnim('stun');
-    FinishAnim();
-    LoopAnim('Idle');
-    Sleep(0.1);
-    GotoState('stateRunAway');
-  }
 }
 
 state HitGround
@@ -486,7 +683,9 @@ state waitingForTrigger
 {
   function Trigger (Actor Other, Pawn EventInstigator)
   {
-    GotoState('Triggered');
+	waitForTrigger = False;
+	bTriggered = True;
+	GotoState('Triggered');
   }
   
  begin:
@@ -495,6 +694,47 @@ state waitingForTrigger
 
 state Triggered
 {
+  //DD39: Added BeginState
+  function BeginState()
+  {
+	if ( goToPatrolPoint )
+	{
+	  bCollideWorld = False;
+      bAlignBottom = True;
+	}
+	
+	if ( PlayerHarry.bIsCaptured || PlayerHarry.bKeepStationary || PlayerHarry.IsInState('CelebrateCardSet') )
+	{
+	  bHoldOff = True;
+	} else {
+	  bHoldOff = False;
+	}
+	
+	if ( bCollOff && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
+	{
+	  bCollOff = False;
+	  SetCollision(True,False,True);
+	}
+  }
+  //DD39: Added EndState
+  function EndState()
+  {
+    if ( goToPatrolPoint )
+	{
+	  bCollideWorld = True;
+      bAlignBottom = False;
+	}
+	bTriggered = False;
+  }
+  //DD39: check for Harry throughout this state
+  event Tick (float DeltaTime)
+  {
+    if ( GoAfterHarry() )
+    {
+      GotoState('stateMoveTowardHarry');
+    }
+  }
+
 begin:
   playTalkSound();
   if ( goToPatrolPoint == True )
@@ -551,7 +791,8 @@ defaultproperties
 
     encroachRadius=50.00
 
-    StayOnSplineDefault=3.00
+    //DD39: StayOnSplineDefault=3.00
+	StayOnSplineDefault=2.25
 
     StopAttackDistance=800.00
 

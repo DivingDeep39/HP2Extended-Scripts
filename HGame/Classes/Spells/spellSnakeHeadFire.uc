@@ -93,4 +93,7 @@ defaultproperties
     CollisionRadius=30.00
 
     CollisionHeight=30.00
+	
+	//DD39: hue change
+	LightHue=12
 }

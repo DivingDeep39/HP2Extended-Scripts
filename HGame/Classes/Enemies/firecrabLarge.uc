@@ -59,7 +59,8 @@ function Tick (float DeltaTime)
     TimeUntilNextFire -= DeltaTime;
     if ( TimeUntilNextFire < 0 )
     {
-      if ( VSize(PlayerHarry.Location - Location) < fAttackRange )
+      //DD39: Added "&& !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet')"
+	  if ( (VSize(PlayerHarry.Location - Location) < fAttackRange) && PlayerCanSeeMe() && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
       {
         TimeUntilNextFire = TimeUntilNextFireDefault;
         GotoState('AttackHarry');
@@ -129,6 +130,12 @@ begin:
 
 state AttackHarry
 {
+	// DD39: Added Tick event to follow Harry.
+	event Tick(float DeltaTime)
+	{
+		DesiredRotation.Yaw = rotator(playerHarry.Location - Location).Yaw;
+	}
+	
 begin:
   if ( BOOL_DEBUG_AI )
   {
@@ -145,7 +152,33 @@ begin:
     PlayAnim('roar');
     FinishAnim();
   }
-  GotoState('throwing');
+  // DD39: Disable following.
+  Disable('tick');
+  // DD39: If Harry's in light of sight, go to throwing, otherwise patrol.
+  if ( LineOfSightTo(PlayerHarry) )
+  {
+	GotoState('throwing');
+  }
+  else
+  {
+	// DD39: Check if it's actually set to patrol.
+    if ( firstPatrolPointObjectName != '' )
+    {
+	  SetWalkingSound();
+	  GotoState('patrol');
+    } else {
+      TurnTo(Location + vMoveDir);
+      // DD39: Set in parent.
+      //vMoveDirRot = Rotation;
+      //vMoveDir = vector(vMoveDirRot);
+      // DD39: Cleared bcs no idea what it does.
+      //TurnTo(navP.Location);
+      // DD39: Cleared because other function sets it.
+      //AmbientSound = WalkingSound;
+      SetWalkingSound();
+      GotoState('patrol');
+    }
+  }
 }
 
 state throwing
@@ -165,6 +198,21 @@ state throwing
     PlayAnim('preattack');
     FinishAnim();
   }
+  
+  // DD39: If Harry's not on sight anymore, go back to patrol.
+  if ( !LineOfSightTo(PlayerHarry) )
+  {
+    if ( firstPatrolPointObjectName != '' )
+    {
+	  SetWalkingSound();
+	  GotoState('patrol');
+    } else {
+      TurnTo(Location + vMoveDir);
+      SetWalkingSound();
+      GotoState('patrol');
+    }
+  }
+  
   // Counter = 0;
   // if ( Counter < 4 )
   for(Counter = 0; Counter < 4; Counter++)
@@ -191,10 +239,48 @@ state throwing
     // Counter++;
     // goto JL0082;
   }
+  
+  // DD39: If Harry's not on sight anymore, go back to patrol.
+  if ( !LineOfSightTo(PlayerHarry) )
+  {
+    if ( firstPatrolPointObjectName != '' )
+    {
+	  SetWalkingSound();
+	  GotoState('patrol');
+    } else {
+      TurnTo(Location + vMoveDir);
+      SetWalkingSound();
+      GotoState('patrol');
+    }
+  }
+  
   PlaySound(Sound'firecrab_preattack',SLOT_None);
   PlayAnim('preattack');
   FinishAnim();
-  largeSpell = Spawn(Class'spellFireLarge',self,,Location + Vec(0.0,0.0,12.0),Rotation + rot(0,32768,0));
+  
+  // DD39: If Harry's not on sight anymore, go back to patrol.
+  if ( !LineOfSightTo(PlayerHarry) )
+  {
+    if ( firstPatrolPointObjectName != '' )
+    {
+	  SetWalkingSound();
+	  GotoState('patrol');
+    } else {
+      TurnTo(Location + vMoveDir);
+      SetWalkingSound();
+      GotoState('patrol');
+    }
+  }
+  
+  //DD39(start): added rotation and location casts
+  DesiredRotation.Yaw = rotator(Location - PlayerHarry.Location).Yaw;
+  spellLocation = PlayerHarry.Location - vect(0.00,0.00,5.00) + VRand() * 10;
+  TempVector = spellLocation;
+  spellOrigin = Location + (-vector(Rotation) * 3);
+  spellOrigin = spellOrigin + Vec(0.0,0.0,12.0);
+  //DD39 (end)
+  //DD39: replaced "Location + Vec(0.0,0.0,12.0)" with "spellOrigin" and replaced "Rotation + rot(0,32768,0)" with "Rotation"
+  largeSpell = Spawn(Class'spellFireLarge',self,,spellOrigin,Rotation);
   largeSpell.fIncreaseHitTimeDistance = fLargeIncreaseHitTimeDistance;
   largeSpell.fHitTimeIncrement = fLargeHitTimeIncrement;
   largeSpell.iDamage = largeSpellDamage;
@@ -203,13 +289,29 @@ state throwing
   largeSpell.GrenadeBounceInterval = GrenadeBounceInterval;
   largeSpell.GrenadeGravity = GrenadeGravity;
   largeSpell.GrenadeExplosionGravity = GrenadeExplosionGravity;
+  //DD39(start): added missing attack sound and animation
+  PlaySound(AttackSound,SLOT_None);
+  PlayAnim('Attack');
+  FinishAnim();
+  //DD39(end)
   Sleep(0.8);
-  TurnTo(Location + vMoveDir);
-  vMoveDirRot = Rotation;
-  vMoveDir = vector(vMoveDirRot);
-  TurnTo(navP.Location);
-  AmbientSound = WalkingSound;
-  GotoState('patrol');
+  // DD39: Check if it's actually set to patrol.
+  if ( firstPatrolPointObjectName != '' )
+  {
+    SetWalkingSound();
+    GotoState('patrol');
+  } else {
+    TurnTo(Location + vMoveDir);
+    // DD39: Set in parent.
+    //vMoveDirRot = Rotation;
+    //vMoveDir = vector(vMoveDirRot);
+    // DD39: Cleared bcs no idea what it does.
+    //TurnTo(navP.Location);
+    // DD39: Cleared because other function sets it.
+    //AmbientSound = WalkingSound;
+    SetWalkingSound();
+    GotoState('patrol');
+  }
 }
 
 defaultproperties

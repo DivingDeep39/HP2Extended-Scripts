@@ -152,7 +152,7 @@ defaultproperties
 
     fxFlyParticleEffectClass=Class'HPParticle.SwordFireball'
 
-    fxHitParticleEffectClass=Class'HPParticle.Flip_hit'
+    fxHitParticleEffectClass=Class'DD39SwordFire_hit'
 
     SpellIncantation="spells1"
 
@@ -164,4 +164,16 @@ defaultproperties
     CollisionRadius=35.00
 
     CollisionHeight=35.00
+	
+	//DD39: hue change
+	LightHue=22
+	
+	//DD39: saturation change
+	LightSaturation=100
+	
+	//DD39: radiuschange
+	LightRadius=15
+	
+	//DD39: radius inner change
+	LightRadiusInner=50
 }

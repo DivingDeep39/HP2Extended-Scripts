@@ -11,6 +11,8 @@ var() int shortestTimeBetweenSpells;
 var() int longestTimeBetweenSpells;
 var name HedwigCurrentPath;
 var() bool bDoNothingAtStartup;
+// DD39: Added custom bools
+var() bool bCapturable;
 
 function PreBeginPlay()
 {
@@ -99,17 +101,42 @@ function GotoNewPath()
 
 function PlayerCutCapture()
 {
-  if ( CutName != "CreditsHedwig" )
+  // DD39: If bCapturable, go to CutIdle:
+  if ( bCapturable )
   {
     cm("Hedwig has been captured" $ CutName);
     GotoState('CutIdle');
+    return;
   }
+  
+  // DD39: Removed as it's unnecessary:
+ /*if ( CutName != "CreditsHedwig" )
+  {
+    cm("Hedwig has been captured" $ CutName);
+    GotoState('CutIdle');
+  }*/
 }
 
 function PlayerCutRelease()
 {
-  cm("Hedwig has been released");
-  GotoState('stateIdle');
+  // DD39: If bCapturable, return from CutIdle.
+  if ( bCapturable )
+  {
+    cm("Hedwig has been released");
+    GotoState('stateIdle');
+  }
+}
+
+// DD39: Added function to handle spellAlohomora
+function bool HandleSpellAlohomora (optional baseSpell spell, optional Vector vHitLocation)
+{
+  if ( eVulnerableToSpell == SPELL_Alohomora )
+  {
+	Super.HandleSpellAlohomora(spell,vHitLocation);
+	eVulnerableToSpell = SPELL_None;
+	TriggerEvent(Event,None,None);
+	return True;
+  }
 }
 
 auto state stateIdle
@@ -122,9 +149,12 @@ begin:
     {
       PlayerHarry.ClientMessage("" $ string(Name) $ ": auto stateIdle");
     }
-    LoopAnim('Breathe');
+	// DD39: It's best she just flies off:
+    /*LoopAnim('Breathe');
     Sleep(2.0);
-    LoopAnim('takeoff');
+    PlayAnim('takeoff');
+	Sleep(0.3666666667);*/
+	LoopAnim('Fly');
     GotoNewPath();
   }
 }
@@ -140,6 +170,8 @@ begin:
   DestroyControllers();
   Acceleration = vect(0.00,0.00,0.00);
   Velocity = vect(0.00,0.00,0.00);
+  // DD39: New animation:
+  LoopAnim('Drop');
 }
 
 state patrolFollowSpline

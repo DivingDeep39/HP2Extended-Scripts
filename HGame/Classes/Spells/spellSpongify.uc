@@ -56,7 +56,7 @@ defaultproperties
 
     fxFlyParticleEffectClass=Class'HPParticle.Spongify_Fly'
 
-    fxHitParticleEffectClass=Class'HPParticle.Spongify_Hit'
+    fxHitParticleEffectClass=Class'DD39Spongify_Hit'
 
     SpellIncantation="spells3"
 
@@ -66,4 +66,10 @@ defaultproperties
 
     // DrawType=0
 	DrawType=DT_None
+	
+	//DD39: hue change
+	LightHue=197
+	
+	//DD39: radius change
+	LightRadius=5
 }

@@ -79,6 +79,14 @@ event Destroyed()
   OnSpellShutdown();
 }
 
+//DD39: Added for fireballs
+event Landed( vector HitNormal )
+{
+    super.Landed(HitNormal);
+    
+    HitWall(HitNormal, Base);
+}
+
 function OnSpellInit()
 {
 }

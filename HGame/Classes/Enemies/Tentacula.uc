@@ -15,7 +15,8 @@ var() LimitsParams LimbTimeIdle;
 var() LimitsParams LimbTimeStunned;
 var() int BulbDamageToHarry;
 var() int LimbDamageToHarry;
-var() int AttachRaduis;
+//DD39: former AttachRaduis
+var() int AlertRadius;
 var() int NumLimbs;
 var() float Scale;
 var() bool bCouldMove;
@@ -31,6 +32,10 @@ var BaseCam Camera;
 var bool bHasGoodLimbs;
 var name bName[4];
 var float rYaw[4];
+//DD39: M212 fix
+//var float SoundDur;
+//DD39: adding a sound var
+var() Sound sndIdle;
 
 function name GetBoneName (int Index)
 {
@@ -49,13 +54,14 @@ function MyAttachActor (Actor A, Actor aOwner, name Bone)
   A.AttachToOwner(Bone);
 }
 
-function MyDeattachActor (Actor A)
+//DD39: unneeded
+/*function MyDeattachActor (Actor A)
 {
   // A.SetPhysics(0);
   A.SetPhysics(PHYS_None);
   A.AnimBone = 0;
   A.SetOwner(None);
-}
+}*/
 
 function AttachLimb (int I)
 {
@@ -72,6 +78,10 @@ function AttachLimb (int I)
   // limbs[I].SetPhysics(2);
   limbs[I].SetPhysics(PHYS_Falling);
   limbs[I].SetCollision(False,False,False);
+  //DD39: match the limb's AG with the body's
+  limbs[I].AmbientGlow = AmbientGlow;
+  //DD39: match the limb's AGC with the body's
+  limbs[I].AmbientGlowColor = AmbientGlowColor;
   MyAttachActor(limbs[I],self,bName[I]);
   if ( limbs[I].spellBox != None )
   {
@@ -102,11 +112,12 @@ function AttachAllLimbs()
   {
     AttachLimb(I);
   }
-  PlayerHarry.ClientMessage("Attach...............................");
+  //PlayerHarry.ClientMessage("Attach...............................");
   bHasGoodLimbs = True;
 }
 
-function DeAttachLimb (int I)
+//DD39: unneeded
+/*function DeAttachLimb (int I)
 {
   if ( limbs[I] == None )
   {
@@ -135,9 +146,9 @@ function DeAttachAllLimbs()
   {
     DeAttachLimb(I);
   }
-  PlayerHarry.ClientMessage("Deattach...............................");
+  //PlayerHarry.ClientMessage("Deattach...............................");
   bHasGoodLimbs = False;
-}
+}*/
 
 function PostBeginPlay()
 {
@@ -197,17 +208,23 @@ function PostBeginPlay()
     limbs[I].relYaw = rYaw[I];
     limbs[I].SetPhysics(PHYS_None);
     limbs[I].SetCollision(False,False,False);
-    limbs[I].spellBox = Spawn(Class'TentaculaSpell',,,);
-    if ( limbs[I].spellBox != None )
-    {
-      limbs[I].MinIdleTime = LimbTimeIdle.Min;
-      limbs[I].MaxIdleTime = LimbTimeIdle.Max;
-      limbs[I].MinStunnedTime = LimbTimeStunned.Min;
-      limbs[I].MaxStunnedTime = LimbTimeStunned.Max;
-      limbs[I].spellBox.SetCollision(False,False,False);
-    }
+	//DD39: if SPELL_None, skip that
+	if ( eVulnerableToSpell == SPELL_Diffindo )
+	{
+      limbs[I].spellBox = Spawn(Class'TentaculaSpell',,,);
+      if ( limbs[I].spellBox != None )
+      {
+        limbs[I].MinIdleTime = LimbTimeIdle.Min;
+        limbs[I].MaxIdleTime = LimbTimeIdle.Max;
+        limbs[I].MinStunnedTime = LimbTimeStunned.Min;
+        limbs[I].MaxStunnedTime = LimbTimeStunned.Max;
+        limbs[I].spellBox.SetCollision(False,False,False);
+      }
+	}
     limbs[I].headBox = Spawn(Class'GenericColObj',self);
   }
+  //DD39: spawn limbs asap
+  AttachAllLimbs();
 }
 
 function bool HasLimbs()
@@ -299,17 +316,22 @@ function bool HandleSpellDiffindo (optional baseSpell spell, optional Vector vHi
   return True;
 }
 
-function PlaySoundAngry()
+//DD39: old playsound and M212 fix
+/*function PlaySoundAngry()
 {
   switch (Rand(5))
-  {
-    case 0:
-    PlaySound(Sound'VT_big_idle_angry');
-    break;
-    default:
-    break;
-  }
-}
+    {
+        //DD39:    Fix this so that we wait until the sound is over to play again
+        case 0:
+            if(SoundDur <= 0)
+            {
+                PlaySound(Sound'VT_big_idle_angry');
+                
+                SoundDur = GetSoundDuration(Sound'VT_big_idle_angry');
+            }
+        break;
+    }
+}*/
 
 function PlaySoundOuch()
 {
@@ -349,12 +371,16 @@ function Tick (float dtime)
 {
   Super.Tick(dtime);
   HarryDamageTimer += dtime;
+      
+  //DD39: Metallicafan212:    Sound counter
+  //SoundDur -= dTime;
 }
 
 auto state stateIdle
 {
 begin:
-  PlaySoundAngry();
+  //DD39: unneeded function
+  //PlaySoundAngry();
   LoopAnim('idlemad');
   Sleep(0.01);
   Acceleration = vect(0.00,0.00,0.00);
@@ -377,20 +403,24 @@ state statePatrol
 {
 begin:
   vTargetDir = PlayerHarry.Location - Location;
-  if ( VSize(vTargetDir) > AttachRaduis )
+  if ( VSize(vTargetDir) > AlertRadius )
   {
-    if ( bHasGoodLimbs )
+    //DD39: unneeded
+	/*if ( bHasGoodLimbs )
     {
       DeAttachAllLimbs();
-    }
+    }*/
     Sleep(0.1);
     GotoState('statePatrol');
   }
-  if ( (VSize(vTargetDir) <= AttachRaduis) &&  !bHasGoodLimbs )
+  //DD39: unneeded
+ /* if ( (VSize(vTargetDir) <= AttachRaduis) &&  !bHasGoodLimbs )
   {
-    AttachAllLimbs();
-  }
-  if ( VSize(vTargetDir) <= TooClose * Scale )
+    //DD39: already done in PostBeginPlay
+	//AttachAllLimbs();
+  }*/
+  //DD39: Added "&& PlayerCanSeeMe()"
+  if ( VSize(vTargetDir) <= TooClose * Scale && PlayerCanSeeMe() )
   {
     rNewRot = rotator(vTargetDir);
     Acceleration = vect(0.00,0.00,0.00);
@@ -401,11 +431,13 @@ begin:
       DesiredRotation.Yaw = rNewRot.Yaw - limbs[firstLimb].relYaw;
 	  //GotoState('stateIdle');
     }
-	GotoState('stateIdle'); //this should be here, UTPT added it in the wrong place -AdamJD 
+	GotoState('stateIdle');
+	//this should be here, UTPT added it in the wrong place -AdamJD 
   } else //{
     if ( VSize(vTargetDir) < SightRadius )
     {
-      if ( bCouldMove && LineOfSightTo(PlayerHarry) && HasLimbs() )
+      //DD39: Added "&& !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet')"
+	  if ( bCouldMove && PlayerCanSeeMe() && HasLimbs() && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
       {
         vNewLoc = Location + 2 * GroundSpeed * vTargetDir / VSize(vTargetDir);
         GotoState('stateGotoHarry');
@@ -413,6 +445,8 @@ begin:
         GotoState('stateIdle');
       }
     } else {
+	  //DD39: setting idle sound
+	  AmbientSound = sndIdle;
       GotoState('stateIdle');
     }
   //}
@@ -438,7 +472,7 @@ defaultproperties
 
     LimbDamageToHarry=5
 
-    AttachRaduis=512
+    AlertRadius=512
 
     NumLimbs=2
 
@@ -464,4 +498,16 @@ defaultproperties
     bCollideActors=False
 
     RotationRate=(Pitch=4096,Yaw=16384,Roll=3072)
+	
+	// DD39: sound for custom var
+	sndIdle=Sound'HPSounds.Critters_sfx.VT_big_idle_angry'
+	
+	// DD39: Default (9) was a bit too wide
+	SoundRadius=7
+	
+	// DD39: so that the sound can be heard
+	SoundVolMult=37
+	
+	// DD39: Let thrown objects stun it
+	bThrownObjectDamage=True
 }

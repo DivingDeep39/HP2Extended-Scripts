@@ -7,6 +7,15 @@ class cHarryAnimChannel extends AnimChannel;
 var HProp propTemp;
 var int LastAnimFrame;
 
+// DD39: MaxG: Tweening variables.
+var float TempFrame;
+
+// DD39: MaxG: Bool to update frame.
+var bool bUpdateFrame;
+
+// DD39: MaxG: For tweening to cast.
+var float LastCastTime;
+
 function GotoStateThrow()
 {
   GotoState('stateThrow');
@@ -98,9 +107,72 @@ begin:
     {
       LoopAnim('duel_charge',1.0,0.2);
     } else {
-      LoopAnim('CastAim',1.0,0.2);
+	  // DD39: Cleared out:
+      //LoopAnim('CastAim',1.0,0.2);
+	  
+	  // DD39: MaxG: This check makes it intentionally not tween if Harry is falling and he casted recently.
+	  //		 It just makes him snap less and looks less janky, strangely enough.
+	  if (Owner.Physics != PHYS_Falling || Harry(Owner).AnimFalling == Harry(Owner).SpongifyFallAnim || (Level.TimeSeconds - LastCastTime) > 0.25)
+	  {
+		  //AnimFrame = 0.0;
+		  PlayAnim(Owner.AnimSequence, 1.0, 0.0);
+		  AnimFrame = Owner.AnimFrame;
+		  TweenAlpha = Owner.TweenAlpha;
+		  Sleep(0.016);
+	  }
+
+	  // DD39: MaxG: Only tween the falling animation IF the last cast was recent.
+	  //		 If the player is spamming cast, don't tween. It will look weird.
+	  if (Owner.Physics == PHYS_Falling)
+	  {
+	  	  LastCastTime = Level.TimeSeconds;
+	  }
+
+	  LoopAnim('CastAim', 1.0, 0.2);
     }
   //}
+}
+
+// DD39: MaxG: A hacky fix for the anim sliding while rapidly casting thing.
+state DoneAiming
+{
+	function BeginState()
+	{
+		Super.BeginState();
+
+		HandleAnimBlending(AT_Replace);
+	}
+}
+
+// DD39: MaxG: Update the animation frame.
+function UpdateFrame()
+{
+	if (bUpdateFrame)
+	{
+		Owner.AnimFrame = TempFrame;
+		bUpdateFrame = false;
+	}
+}
+
+// DD39: MaxG: HandleAnimBlending
+function HandleAnimBlending(eAnimType AnimType)
+{
+	// DD39: MaxG: Update the TempFrame
+	TempFrame = Owner.AnimFrame;
+
+	// DD39: MaxG: Make Harry animate so that he tweens.
+	if (!Harry(Owner).bIsCaptured)
+	{
+		Owner.PlayAnim(Owner.AnimSequence, , 0.5);
+	}
+
+	// DD39: MaxG: Update anim type.
+	Harry(Owner).HarryAnimType = AnimType;
+
+	// DD39: MaxG: Update anim frame. This needs to be done again in UpdateFrame(). IDK why.
+	Owner.AnimFrame = TempFrame;
+
+	bUpdateFrame = true;
 }
 
 state stateCancelCasting
@@ -132,6 +204,14 @@ begin:
 
 state stateDefenceCast
 {
+  //DD39: function to disable spell rebound after the state code
+  //	  and make sure the Expelliarmus Charge Light wears off.
+  function EndState()
+  {
+    harry(Owner).bReboundingSpells = False;
+	baseWand(harry(Owner).Weapon).WearOffChargeLight();
+  }
+
 begin:
   if ( harry(Owner).fTimeAfterHit > 0 )
   {
@@ -392,6 +472,8 @@ state stateReactRictusempra
   function BeginState()
   {
     harry(Owner).HarryAnimType =  AT_Combine;
+	// DD39: Wear off spell Charge Light.
+	baseWand(harry(Owner).Weapon).WearOffChargeLight();
   }
   
  begin:
@@ -418,6 +500,8 @@ state stateReactMimbleWimble
   function BeginState()
   {
     harry(Owner).HarryAnimType =  AT_Combine;
+	// DD39: Wear off spell Charge Light.
+	baseWand(harry(Owner).Weapon).WearOffChargeLight();
   }
   
  begin:

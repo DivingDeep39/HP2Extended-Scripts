@@ -828,8 +828,7 @@ exec function AllowedInMenus TogglePauseMenu()
 	{
 		return;
 	}
-	//log("Toggle pause menu");
-	
+	//log("Toggle pause menu");	
 	menuBook.TogglePauseMenu();
 }
 
@@ -841,6 +840,13 @@ exec function AllowedInMenus ToggleMapMenu()
 	{
 		return;
 	}
+	
+	// DD39: Prevents actors in the credits from freezing.
+	if ( FECreditsPage(menuBook.curPage) != None )
+	{
+		return;
+	}
+	
 	log("Toggle map");
 	menuBook.ToggleMap();
 }
@@ -1271,6 +1277,19 @@ function SetupLanguage()
 		*/
 		case "ENG":
 		case "INT":
+		// DD39: Moved up from the Big font size group below
+		case "BRA":
+        case "DAN":
+        case "DUT":
+        case "FIN":
+        case "FRE":
+        case "GER":
+        case "ITA":
+        case "NOR":
+        case "POR":
+        case "SPA":
+        case "SWE":
+        case "USA":
 			LocalBigFont = Font'HugeInkFont';
 			LocalMedFont = Font'BigInkFont';
 			LocalSmallFont = Font'MedInkFont';
@@ -1279,6 +1298,8 @@ function SetupLanguage()
 			break;
 	
 		// Metallicafan212:	Missing non-localized languages
+		// DD39: Moving these all up to the Huge font size
+		/*
 		case "BRA":
         case "DAN":
         case "DUT":
@@ -1297,6 +1318,7 @@ function SetupLanguage()
 			LocalTinyFont = Font'TinyInkFont';
 			LocalIconMessageFont = Font'SmallInkFont';
 			break;
+		*/
    
 		// Metallicafan212:	Treat all "unknown" extensions as localized
 		default:
@@ -1560,4 +1582,13 @@ defaultproperties
     PausedMessage="PRESS ESC TO EXIT"
 
     PrecachingMessage="ENTERING"
+	
+	// DD39: Added keys to interact with menus
+	AllowedKeysOrActionsInMenu(0)=IK_Escape
+	
+	AllowedKeysOrActionsInMenu(1)=IK_Tab
+	
+	AllowedKeysOrActionsInMenu(2)=IK_XBStart
+	
+	AllowedKeysOrActionsInMenu(3)=IK_XBSelect
 }

@@ -49,7 +49,7 @@ state StateFlying
   
   function bool OnSpellHitHarry (Actor aHit, Vector HitLocation)
   {
-    aHit.TakeDamage(15,Instigator,vect(0.00,0.00,0.00),vect(0.00,0.00,0.00),'None');
+	aHit.TakeDamage(15,Instigator,vect(0.00,0.00,0.00),vect(0.00,0.00,0.00),'None');
     fxHitHarryParticleEffect = Spawn(fxHitHarryParticleEffectClass);
     return True;
   }
@@ -77,4 +77,10 @@ defaultproperties
 
     // DrawType=0
 	DrawType=DT_None
+	
+	//DD39: hue change
+	LightHue=97
+	
+	//DD39: radius change
+	LightRadius=8
 }

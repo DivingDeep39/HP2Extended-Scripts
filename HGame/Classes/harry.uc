@@ -301,9 +301,16 @@ var travel ChallengeScoreType ChallengeScores[4];
 var bool bForceBlackScreen;
 var travel bool bHarryKilled;
 var int iMinHealthAfterDeath;
-// DivingDeep39: Used for ObjectiveId's localization and section
+// DD39: Bool needed to prevent sliding when caught in mid-air
+var bool bIsCaught;
+// DD39: DivingDeep39: Used for ObjectiveId's localization and section
 var travel string strObjectiveIntFile;
 var travel string strObjectiveSection;
+// DD39: Adding input for FlyingCarHarry
+var input byte bCarBoost;
+// DD39: Adding bool for FlyingCar and StatusItemHealth
+var bool bHideHealth;
+
 
 event PreBeginPlay()
 {
@@ -442,6 +449,8 @@ function PostBeginPlay()
 		break;
 	if( cam == none )
 		cam = spawn( class'BaseCam' );
+		//DD39: Slight increase in spell cursor rotation repsonsiveness
+		SpellCursor.TickParent = cam;
 		
 	// Metallicafan212:	Correct the fov
 	Cam.SetFOV(90.0);
@@ -494,6 +503,11 @@ event Possess()
 
 function DisablePlayerInput()
 {
+  //DD39: Drop what you're holding
+  if ( CarryingActor != None )
+  {
+	DropCarryingActor();
+  }
   SendPlayerCaptureMessages(True);
   bIsCaptured = True;
   myHUD.StartCutScene();
@@ -998,6 +1012,8 @@ function CopyAllStatusFromHarryToManager()
 {
   CopyGenericStatusFromHarryToManager();
   CopyCardCardStatusFromHarryToManager();
+  //DD39: Calling the function in StatusItemStars to update the Max Stars counter
+  StatusItemStars(managerStatus.GetStatusItem(Class'StatusGroupStars',Class'StatusItemStars')).GetMaxStarsCount();
 }
 
 /*
@@ -1360,8 +1376,27 @@ state statePickupItem
   GotoState('PlayerWalking');
 }
 
+//DD39: Amazing but out of scope. Ignore.
+/*// MaxG: No stopping.
+state statePickupItem extends PlayerWalking
+{
+    begin:
+        HarryAnimType = AT_Combine;
+
+        HarryAnimChannel.GotoState('statePickupItem');
+
+        PlayAnim('Pickup',1.0,0.151,[Type]HarryAnimType);
+
+        GotoState('PlayerWalking');
+}*/
+
 function DoPotionMixingBegin()
 {
+  //DD39: Drop what you're holding
+  if ( CarryingActor != None )
+  {
+	DropCarryingActor();
+  }
   bKeepStationary = True;
   GotoState('statePotionMixingBegin');
 }
@@ -1590,6 +1625,9 @@ state stateDead
     {
       AnimFrame = 36.0 / 151.0;
     }
+	
+	// DD39: MaxG: Stop floating.
+    SetPhysics(PHYS_Falling);
   }
   
   function vector FindFaintLocation()
@@ -2319,10 +2357,20 @@ function TakeDamage (int Damage, Pawn InstigatedBy, Vector HitLocation, Vector M
         bHidden = True;
       }
     } else {
-      if ( (DamageType == 'Falling') && (FinalDamage > 20) )
+	  if ( (DamageType == 'Falling') && (FinalDamage > 20) )
       {
         bFallDamage = True;
       }
+	  
+	  // DD39: No damage in these scenarios:
+	  if ( bIsCaptured || bKeepStationary || IsInState('CelebrateCardSet') )
+      {
+		if ( !bFallDamage )
+		{
+			return;
+		}
+	  }
+	  
       if ( iEctoRefCount > 0 )
       {
         if (  !bPlayedEctoKnockBack || ( ++iEctoHurtSoundCount >= 6) )
@@ -2367,6 +2415,16 @@ function TakeDamage (int Damage, Pawn InstigatedBy, Vector HitLocation, Vector M
         }
         bPlayedEctoKnockBack = True;
       }
+	  //DD39: Prevents double casting with the sword by not letting Harry change its state from stateCast
+	  if ( bHarryUsingSword && HarryAnimChannel.IsInState('stateCast') )
+	  {
+		bPlayKnockBack = False;
+	  }
+	  //DD39: Prevents "stun lock"
+	  if ( IsInState('Mounting') || IsInState('MountFinish') )
+	  {
+	    bPlayKnockBack = False;
+	  }
       if ( bPlayKnockBack )
       {
         HarryAnimChannel.DoKnockBack();
@@ -2744,8 +2802,26 @@ function PlayDeathEmoteSound()
   }
 }
 
+// DD39: Omega: Most emotes, except death, will not cancel Harry's lines
+function bool IsCurrentlySpeaking()
+{
+  // Omega: We can make a reasonable guess that we're currently speaking in a cutscene or popup in this state
+  if(HPHud(MyHud).managerCutScene.strText != "" && !HPHud(MyHud).managerCutScene.IsInState('Idle') && SoundSlotOccupied(Slot_Talk))
+  {
+      return true;
+  }
+
+  return false;
+}
+
 function PlayLandedEmoteSound()
 {
+  //DD39: Check if he's speaking, in case cancel emote
+  if(IsCurrentlySpeaking())
+  {
+      return;
+  }
+  
   if ( bIsGoyle )
   {
     switch (Rand(5))
@@ -2792,6 +2868,12 @@ function PlayLandedEmoteSound()
 
 function PlayFallingPullupEmoteSound()
 {
+  //DD39: Check if he's speaking, in case cancel emote
+  if(IsCurrentlySpeaking())
+  {
+      return;
+  }
+  
   if ( bIsGoyle )
   {
     switch (Rand(3))
@@ -2814,6 +2896,12 @@ function PlayFallingPullupEmoteSound()
 
 function PlayEasyPullupEmoteSound()
 {
+  //DD39: Check if he's speaking, in case cancel emote
+  if(IsCurrentlySpeaking())
+  {
+      return;
+  }
+  
   if ( bIsGoyle )
   {
     switch (Rand(3))
@@ -2836,6 +2924,12 @@ function PlayEasyPullupEmoteSound()
 
 function PlayHardPullupEmoteSound()
 {
+  //DD39: Check if he's speaking, in case cancel emote
+  if(IsCurrentlySpeaking())
+  {
+      return;
+  }
+  
   if ( bIsGoyle )
   {
     switch (Rand(3))
@@ -2883,6 +2977,12 @@ function PlayFallDeepEmoteSound()
 
 function PlayJumpEmoteSound()
 {
+  //DD39: Check if he's speaking, in case cancel emote
+  if(IsCurrentlySpeaking())
+  {
+      return;
+  }
+  
   if ( bIsGoyle )
   {
     switch (Rand(3))
@@ -2909,6 +3009,12 @@ function PlayIncantationEmoteSound (ESpellType SpellType)
 {
   local string SpellIncantation;
 
+  //DD39: Check if he's speaking, in case cancel emote
+  if(IsCurrentlySpeaking())
+  {
+      return;
+  }
+  
   if ( bIsGoyle )
   {
     switch (SpellType)
@@ -3352,6 +3458,10 @@ function TweenToRunning (float TweenTime)
     LoopAnim(HarryAnims[HarryAnimSet].run,0.89999998,[TweenTime]TweenTime,,[Type]HarryAnimType);
     bMovingBackwards = False;
   }
+  
+  // DD39: MaxG: Bad code to fix KW's bad code.
+  //		 This fixes the anim sliding issue when spam casting.
+  HarryAnimChannel.UpdateFrame();
 }
 
 function PlayRunning()
@@ -3393,6 +3503,7 @@ function PlayWaiting()
   {
     return;
   }
+  
   WaitingCount++;
   if ( WaitingCount < 3 )
   {
@@ -3584,6 +3695,13 @@ exec function AltFire (optional float f)
   local Vector V;
   local Rotator R;
 
+  //DD39: Omega: Fix the double throw
+  //	Also fix Harry aiming while in DisablePlayerInput
+  if ( HarryAnimChannel.IsInState('stateThrow') || bIsCaptured )
+  {
+    return;
+  }
+  
   if ( HarryAnimChannel.IsCarryingActor() )
   {
     if ( bThrow == False && IsInState('PlayerWalking') )
@@ -3623,6 +3741,14 @@ state Mounting
     Acceleration = vect(0.00,0.00,0.00);
     SetPhysics(PHYS_Projectile);
     SetBase(MountBase);
+	//DD39: Fix SpellCursor distance not resetting after a Spongify fall
+	//		if Harry grabs a ledge while AnimFalling == SpongifyFallAnim.
+	//		Also resetting AnimFalling to default.
+	if ( !bExtendedTargetting && AnimFalling == SpongifyFallAnim )
+	{
+	  SpellCursor.SetLOSDistance(0.0);
+	  AnimFalling = HarryAnims[HarryAnimSet].fall;
+	}
   }
   
   //UTPT didn't add this for some reason -AdamJD
@@ -3737,14 +3863,37 @@ state ChessDeath
 function DoCelebrateCardSet (bool bCelebrateBronzeIn)
 {
   bCelebrateBronze = bCelebrateBronzeIn;
-  GotoState('CelebrateCardSet');
+  
+  // DD39: if Harry is captured or still, don't celebrate
+  if ( bIsCaptured || bKeepStationary )
+  {
+	if ( bCelebrateBronze )
+	{
+		PlaySound(Sound'health_boost1');
+		GetHealthStatusItem().IncrementCountPotential(StatusItemHealth(GetHealthStatusItem()).nUnitsPerIcon);
+	}
+  }
+  else
+  {
+	GotoState('CelebrateCardSet');
+  }
 }
 
 state CelebrateCardSet
 {
+  // DD39: Added ignores Mount.
+  ignores Mount;
+  
   event BeginState()
   {
     nCelebrateProgress = 0;
+	//DD39: Drop what you're holding
+	if ( CarryingActor != None )
+	{
+		DropCarryingActor();
+	}
+	//DD39: Actors behave as if Harry is captured.
+	SendPlayerCaptureMessages(True);
   }
   
   event EndState()
@@ -3761,6 +3910,14 @@ state CelebrateCardSet
     {
       Cam.SetCameraMode(Cam.ECamMode.CM_Transition);
     }
+	//DD39: Fix Spongify Storage
+	if ( !bExtendedTargetting && AnimFalling == SpongifyFallAnim )
+	{
+	  SpellCursor.SetLOSDistance(0.0);
+	  AnimFalling = HarryAnims[HarryAnimSet].fall;
+	}
+	//DD39: Actors go back to normal
+	SendPlayerCaptureMessages(False);
   }
   begin:
 	  Cam.SetCameraMode(Cam.ECamMode.CM_CutScene);
@@ -3771,6 +3928,9 @@ state CelebrateCardSet
 	  Cam.SetPitch(-6000.0);
 	  Cam.SetDistance(100.0);
 	  Cam.SetRotStepYaw(-12288.0);
+	  //DD39: Velocity and Acceleration to fix sliding when collecting every 10th card
+	  Velocity = vect(0.00,0.00,0.00);
+	  Acceleration = vect(0.00,0.00,0.00);
 	  PlayAnim('celebrate',1.0,0.2);
 	  if ( bCelebrateBronze )
 	  {
@@ -3849,14 +4009,33 @@ function StopAiming()
 	//Dont even bother trying to do this if you're carrying something.  You wont be aiming FOR SURE.
 	if( CarryingActor == none )
 	{
-		HarryAnimChannel.GotoState( 'stateIdle' );
-		HarryAnimType = AT_Replace;
+		
+		// DD39: Cleared out:
+		//HarryAnimChannel.GotoState( 'stateIdle' );
+		
+		// DD39: MaxG: Attempt to fix aiming making the anim reset.
+		if ( CurrFidgetAnimName == 'None' )
+		{
+			HarryAnimChannel.GotoState('DoneAiming');
+		}
+		else
+		{
+			// DD39: If Harry had started aiming while fidgeting, do this to cancel the fidget.
+			CurrFidgetAnimName = 'None';
+			HarryAnimChannel.HandleAnimBlending(AT_Replace);
+			HarryAnimChannel.GotoState( 'stateIdle' );
+		}
+		
+		//DD39: Cleared out:
+		//HarryAnimType = AT_Replace;
+		
 		TurnOffCastingVars();
 		TurnOffSpellCursor();
 		
 		if ( bHarryUsingSword )
 		{
-		  StopSound(Sound'sword_buildup',SLOT_Interact);
+		  // DD39: Had the BaseCam play the sound to avoid sound spamming.
+		  Cam.StopSound(Sound'sword_buildup',SLOT_Interact);
 		}
 	}
 }
@@ -3906,6 +4085,15 @@ function PlayerTick (float dtime)
 {
   //cm("Current state is " $ GetStateName());
 
+  //DD39: If Harry is caught, zero his velocity and acceleration to prevent sliding
+  //	  and set the bool back to false
+  if ( bIsCaught )
+  {
+	Acceleration = vect(0.00,0.00,0.00);
+	Velocity = vect(0.00,0.00,0.00);
+	bIsCaught = False;
+  }
+  
   if ( fTimeAfterShield > 0 )
   {
     fTimeAfterShield -= dtime;
@@ -4333,7 +4521,8 @@ state PlayerWalking
       HPConsole(Player.Console).bSpacePressed = False;
       if ( in_bHarryUsingSword )
       {
-        PlaySound(Sound'sword_buildup',SLOT_Interact);
+        //DD39: BaseCam plays the sound to avoid sound spamming
+		Cam.PlaySound(Sound'sword_buildup',SLOT_Interact);
       } 
 	  else 
 	  {
@@ -4341,7 +4530,9 @@ state PlayerWalking
         makeTarget();
       }
       HarryAnimChannel.GotoStateCasting(in_bHarryUsingSword);
-      HarryAnimType = AT_Combine;
+	  
+      // DD39: MaxG: This is done in the anim channel.
+	  //HarryAnimType = AT_Combine;
     }
   }
   
@@ -4661,10 +4852,32 @@ state PlayerWalking
     local name AnimGroupName;
   
 	//log("Player move!");
+	// DD39(start): Omega: transform movement by the camera rotation:
+    local vector vMove;
+
+    if( Cam.IsInState('StateStandardCam') )
+    {
+      // Omega: We only want the yaw:
+      // This fixes a slight issue where if you look down and move forwards and to the side, you'll slow down in the frontward facing direction
+      CamRot = Cam.Rotation;
+      CamRot.Pitch = 0;
+      CamRot.Roll = 0;
+
+      vMove = vec(aForward, aStrafe, 0);
+      /*vMove.X = aForward;
+      vMove.Y = aStrafe;*/
+
+      vMove = vMove >> (CamRot - Rotation);
+      aForward = vMove.X;
+      aStrafe = vMove.Y;
+    }
+	//DD39 (end)
   
     if ( bReverseInput )
     {
-      aForward = Abs(aForward * 2);
+      // DD39: MaxG: Fully reverse the input.
+	  //aForward = Abs(aForward * 2);
+	  aForward = -aForward;
       aTurn =  -aTurn;
       aStrafe =  -aStrafe;
     }
@@ -5235,6 +5448,11 @@ state SpellLearning
 
 function StartVendorEngagement (VendorManager VManager)
 {
+  //DD39: Drop what you're holding
+  if ( CarryingActor != None )
+  {
+	DropCarryingActor();
+  }
   CurrVendorManager = VManager;
   bKeepStationary = True;
 }
@@ -5312,6 +5530,12 @@ state stateCutIdle
     Acceleration = vect(0.00,0.00,0.00);
     Velocity = vect(0.00,0.00,0.00);
     CurrIdleAnimName = GetCurrIdleAnimName();
+	//DD39: Fix Spongify Storage
+	if ( !bExtendedTargetting && AnimFalling == SpongifyFallAnim )
+	{
+	  SpellCursor.SetLOSDistance(0.0);
+	  AnimFalling = HarryAnims[HarryAnimSet].fall;
+	}
     LoopAnim(CurrIdleAnimName,1.0,0.2);
   }
 }
@@ -5420,6 +5644,11 @@ function bool CutCommand (string Command, optional string cue, optional bool bFa
 			CurrCharacter.OnHarryCaptured();
 		}	
 		
+		//DD39: Drop what you're holding
+		if ( CarryingActor != None )
+		{
+			DropCarryingActor();
+		}
 		bIsCaptured = True;
 		myHUD.StartCutScene();
 		SendPlayerCaptureMessages(True);
@@ -5430,7 +5659,7 @@ function bool CutCommand (string Command, optional string cue, optional bool bFa
 	{
 		myHUD.EndCutScene();
 		DestroyControllers();
-		// DivingDeep39: Destroy TurnToController
+		// DD39: DivingDeep39: Destroy TurnToController
 		DestroyTurnToPermanentController();
 		SendPlayerCaptureMessages(False);
 		bIsCaptured = False;
@@ -6247,6 +6476,17 @@ event ViewFlash (float DeltaTime)
   Super.ViewFlash(DeltaTime);
 }
 
+//DD39: MaxG: Is Harry casting?
+function bool IsCasting()
+{
+    if (HarryAnimChannel.IsInState('stateCast')|| HarryAnimChannel.IsInState('stateDefenceCast') || HarryAnimChannel.IsInState('stateDuelingCast'))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 defaultproperties
 {
     bAutoCenterCamera=True
@@ -6410,4 +6650,10 @@ defaultproperties
     Buoyancy=118.80
 
     RotationRate=(Pitch=20000,Yaw=70000,Roll=3072)
+	
+	//DD39: New GStates 036, 071 and 072
+	GameStateMasterList="GSTATE000,GSTATE010,GSTATE020,GSTATE030,GSTATE035,GSTATE036,GSTATE040,GSTATE045,GSTATE050,GSTATE060,GSTATE065,GSTATE070,GSTATE071,GSTATE072,GSTATE080,GSTATE090,GSTATE095,GSTATE100,GSTATE110,GSTATE115,GSTATE120,GSTATE130,GSTATE140,GSTATE145,GSTATE150,GSTATE160,GSTATE170,GSTATE180"
+	
+	//DD39: Default is 25
+	TotalGameStateTokens=28
 }

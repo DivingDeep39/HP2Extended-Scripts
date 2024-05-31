@@ -6,7 +6,8 @@ class StatusItemNimbus extends StatusItem;
 
 defaultproperties
 {
-    strHudIcon="HP2_Menu.Icons.HP2Nimbus2001"
+    //DD39: new icon
+	strHudIcon="Extended_Textures.Icons.HP2Nimbus2001"
 
     bDisplayWhenCountZero=False
 

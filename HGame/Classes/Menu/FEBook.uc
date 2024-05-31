@@ -766,7 +766,16 @@ function OpenBook (optional string pageName)
 		return;
 	}
 	HPConsole(Root.Console).bQuickKeyEnable = False;
-	harry(HPConsole(Root.Console).Viewport.Actor).StopAiming();
+	
+	//DD39: Removed and replaced with MaxG's fix.
+	//harry(HPConsole(Root.Console).Viewport.Actor).StopAiming();
+	
+	//DD39: MaxG: Patch pause casting.
+    if (!harry(HPConsole(Root.Console).Viewport.Actor).IsCasting())
+    {
+        harry(HPConsole(Root.Console).Viewport.Actor).StopAiming();
+    }
+	
 	HPConsole(Root.Console).LaunchUWindow();
 	bIsOpen = True;
 	if ( pageName != "" )
@@ -789,9 +798,14 @@ function CloseBook()
 	if ( nMusicHandle != 0 )
 	{
 		bNeedToStartMusic = False;
-		GetPlayerOwner().StopMusic(nMusicHandle,0.0);
-		nMusicHandle = 0;
-		MusicToPlay = Default.MusicToPlay;
+		
+		// DD39: Don't stop the music if you're in EndGame.
+		if ( !bInEndGame )
+		{
+			GetPlayerOwner().StopMusic(nMusicHandle,0.0);
+			nMusicHandle = 0;
+			MusicToPlay = Default.MusicToPlay;
+		}
 	}
 	Log(" */**/** CloseBook Called!!! ");
 	curPage.ClearRollover();

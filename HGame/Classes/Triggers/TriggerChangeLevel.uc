@@ -5,19 +5,33 @@
 class TriggerChangeLevel extends Trigger;
 
 var() string NewMapName;
+// DD39: Added PlayerHarry var:
+var harry PlayerHarry;
+
+// DD39: Added PreBeginPlay for new player reference:
+event PreBeginPlay()
+{
+  Super.PreBeginPlay();
+  
+  PlayerHarry = harry(Level.PlayerHarryActor);
+}
 
 auto state Waiting
 {
   event Trigger (Actor Other, Pawn EventInstigator)
   {
     ProcessTrigger();
-    Level.PlayerHarryActor.ClientMessage(string(self) $ " Here1");
+	// DD39: Change for new player reference:
+    //Level.PlayerHarryActor.ClientMessage(string(self) $ " Here1");
+	PlayerHarry.ClientMessage(string(self) $ " Here1");
   }
   
   function Touch (Actor Other)
   {
     Super.Touch(Other);
-    if ( Other == Level.PlayerHarryActor )
+	// DD39: Change for new player reference:
+    //if ( Other == Level.PlayerHarryActor )
+	if ( Other == PlayerHarry )
     {
       ProcessTrigger();
     }
@@ -27,14 +41,23 @@ auto state Waiting
 
 function ProcessTrigger()
 {
-  local harry PlayerHarry;
+  // DD39 (start): Clear:
+  //local harry PlayerHarry;
 
-  PlayerHarry = harry(Level.PlayerHarryActor);
+  /*PlayerHarry = harry(Level.PlayerHarryActor);
   if ( PlayerHarry == None )
   {
     Log("TriggerChangeLevel: Couldn't find Harry, and that ain't right!");
     return;
+  }*/
+  // DD39 (end)
+  
+  // DD39: if Harry is dead, don't change level:
+  if ( PlayerHarry.bInstantDeath || PlayerHarry.bHarryKilled || PlayerHarry.IsInState('stateDead') )
+  {
+    return;
   }
+
   PlayerHarry.LoadLevel(NewMapName);
   if ( InStr(Caps(NewMapName),"STARTUP") > -1 )
   {

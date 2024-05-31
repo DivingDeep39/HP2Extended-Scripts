@@ -384,7 +384,8 @@ event PreSaveGame()
 
 event Bump (Actor Other)
 {
-  if ( (Other == Level.PlayerHarryActor) && (Level.PlayerHarryActor.Physics != PHYS_Falling) && (HaveSomethingToSell() || SellsSomethingButOutOfStock()) )
+  // DD39: Added "(!PlayerHarry.bHarryKilled)".
+  if ( (Other == Level.PlayerHarryActor) && (Level.PlayerHarryActor.Physics != PHYS_Falling) && (!PlayerHarry.bHarryKilled) && (HaveSomethingToSell() || SellsSomethingButOutOfStock()) )
   {
     if ( managerVendor == None )
     {
@@ -544,7 +545,8 @@ event Tick (float fDeltaTime)
       fLureTick = 0.0;
       if ( VSize2D(Level.PlayerHarryActor.Location - Location) <= nLureDistance )
       {
-        if ( !bInLureRange && HaveSomethingToSell() && harry(Level.PlayerHarryActor).LineOfSightTo(self) && harry(Level.PlayerHarryActor).InFrontOfHarry(self) && !HPHud(harry(Level.PlayerHarryActor).myHUD).IsCutSceneOrPopupInProgress() )
+        // DD39: Added "(Level.PlayerHarryActor.Physics != PHYS_Falling) && !PlayerHarry.bHarryKilled".
+		if ( !bInLureRange && HaveSomethingToSell() && harry(Level.PlayerHarryActor).LineOfSightTo(self) && harry(Level.PlayerHarryActor).InFrontOfHarry(self) && !HPHud(harry(Level.PlayerHarryActor).myHUD).IsCutSceneOrPopupInProgress() && (Level.PlayerHarryActor.Physics != PHYS_Falling) && !PlayerHarry.bHarryKilled )
         {
           bInLureRange = True;
           nameVendorSavedState = GetStateName();
@@ -1169,10 +1171,14 @@ defaultproperties
 	// Omega: Default stuff
 	bAllowGoyleInDuel=false
 	iMinDuelGstate=80
-	iDuelGStateBlacklist(0)=120
-	iDuelGStateBlacklist(1)=150
-	iDuelGStateBlacklist(2)=160
-	iDuelGStateBlacklist(3)=170
+	// DD39: Edited the default iDuelGStateBlacklist to fit the mod's needs
+	iDuelGStateBlacklist(0)=100
+	iDuelGStateBlacklist(1)=110
+	iDuelGStateBlacklist(2)=115
+	iDuelGStateBlacklist(3)=120
+	iDuelGStateBlacklist(4)=150
+	iDuelGStateBlacklist(5)=160
+	iDuelGStateBlacklist(6)=170
 
 	Duels(0)=(DuelistBeans=10,OurDuelLevelName="Duel01",DuelMesh=SkeletalMesh'skhp2_genmale2Mesh',DuelSkins=(Texture'skhp2_genmale1_1Tex0',Texture'skhp2_genmale1_1Tex1'))
 	Duels(1)=(DuelistBeans=15,OurDuelLevelName="Duel02",DuelMesh=SkeletalMesh'skhp2_genfemale1Mesh',DuelSkins=(Texture'skhp2_genfemale1_6Tex0',Texture'skhp2_genfemale1_6Tex1'))

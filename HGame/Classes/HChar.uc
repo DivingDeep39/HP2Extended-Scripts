@@ -53,7 +53,7 @@ var int iCanSeeHarryCounter;
 var bool bTempDontLookForHarry;
 var Vector vLastPosition;
 
-// DivingDeep39: Replaced with float var fStuckTimer
+// DD39: DivingDeep39: Replaced with float var fStuckTimer
 //var int iStuckCounter;
 var float fStuckTimer;
 
@@ -68,8 +68,16 @@ var(WatchForHarry) float fNotifyOthersHearDistance;
 var(WatchForHarry) name EventName;
 var Actor aListenToMe;
 var bool bCapturedFromStateIdle;
+//DD39: Adding var for custom director
+var DD39Adv7SneakDirector Director;
+//DD39: Bool to allow backwards compatibility
+var (WatchForHarry) bool bUseDirector;
+//DD39: Bool to destroy the secret area cutscene in Adv7
+var (WatchForHarry) bool bDestroyCut;
+//DD39: Bool to check if the aforementioned cutscene is destroyed
+var bool bCutDestroyed;
 
-// DivingDeep39: New variables for Bump Lines customization.
+// DD39: DivingDeep39: New variables for Bump Lines customization.
 var(BumpLinesM212) string BumpSetFile;
 var(BumpLinesM212) string LocalizationFile;
 var(BumpLinesM212) string Package;
@@ -222,24 +230,30 @@ state followHarry
 	{
 		vLastPosition = vect(0.00,0.00,0.00);
 		
-		// DivingDeep39: Setting default to 4.0 seconds
+		// DD39: DivingDeep39: Setting default to 4.0 seconds
 		//iStuckCounter = 0;
 		fStuckTimer = 4.0;
 		
 		iCanSeeHarryCounter = 0;
-		TriggerEvent('SilenceTwo',None,None);
-		TriggerEvent('ChaseMusic',None,None);
+		//DD39: run function in custom director
+		if ( bUseDirector )
+		{
+		  Director.HarrySpotted();
+		} else {
+		  TriggerEvent('SilenceTwo',None,None);
+		  TriggerEvent('ChaseMusic',None,None);
+		}
 	}
 	
 	function Tick (float dtime)
 	{
 		if ( VSize2D(Location - vLastPosition) < 1 )
 		{
-			// DivingDeep39: Instead of counting up, let's count down
+			// DD39: DivingDeep39: Instead of counting up, let's count down
 			//iStuckCounter++;
 			fStuckTimer -= dtime;
 			
-			// DivingDeep39: If countdown reaches 0, change state
+			// DD39: DivingDeep39: If countdown reaches 0, change state
 			//if ( iStuckCounter > 4 )
 			if ( fStuckTimer <= 0.0 )
 			{
@@ -249,7 +263,7 @@ state followHarry
 		} 
 		else 
 		{
-			// DivingDeep39: Setting default to 4.0 seconds
+			// DD39: DivingDeep39: Setting default to 4.0 seconds
 			//iStuckCounter = 0;
 			fStuckTimer = 4.0;
 		}
@@ -294,7 +308,7 @@ state RandomLookForHarry
 	{
 		vLastPosition = vect(0.00,0.00,0.00);
 		
-		// DivingDeep39: Setting default to 4.0 seconds
+		// DD39: DivingDeep39: Setting default to 4.0 seconds
 		//iStuckCounter = 0;
 		fStuckTimer = 4.0;
 		
@@ -316,17 +330,17 @@ state RandomLookForHarry
 	  {
 		  if ( VSize2D(Location - vLastPosition) < 1 )
 		  {
-		      // DivingDeep39: Instead of counting up, let's count down
+		      // DD39: DivingDeep39: Instead of counting up, let's count down
 			  //iStuckCounter++;
 			  fStuckTimer -= dtime;
 			  
-		      // DivingDeep39: If countdown reaches 0, change state
+		      // DD39: DivingDeep39: If countdown reaches 0, change state
 			  //if ( iStuckCounter > 4 )
 			  if ( fStuckTimer <= 0.0 )
 		      {
 		          vLastPosition = vect(0.00,0.00,0.00);
 				  
-			      // DivingDeep39: Setting default to 4.0 seconds
+			      // DD39: DivingDeep39: Setting default to 4.0 seconds
 				  //iStuckCounter = 0;
 				  fStuckTimer = 4.0;
 				  
@@ -336,7 +350,7 @@ state RandomLookForHarry
 		  }
 		  else
 		  {
-		      // DivingDeep39: Setting default to 4.0 seconds
+		      // DD39: DivingDeep39: Setting default to 4.0 seconds
 			  //iStuckCounter = 0;
 			  fStuckTimer = 4.0;
 		  }
@@ -389,7 +403,7 @@ state RandomLookForHarry
 		TurnTo(vTemp);
 		bDoStuckChecking = True;
 		
-		// DivingDeep39: Setting default to 4.0 seconds
+		// DD39: DivingDeep39: Setting default to 4.0 seconds
 		//iStuckCounter = 0;
 		fStuckTimer = 4.0;
 		
@@ -449,6 +463,17 @@ state CaughtHarry
 				A.GotoState('LookForHarryIdle');
 			}
 		}
+		//DD39: run function in custom director
+		if ( bUseDirector )
+		{
+		  Director.HarryCaught();
+		}
+		//DD39: Destroy the secret area cutscene in Adv7
+		if ( bDestroyCut && !bCutDestroyed )
+		{
+		  bCutDestroyed = True;
+		  TriggerEvent('DD39DestroyBannerStatueCut',None,None);
+		}
 	}
 	begin:
 		//Log("In state " $GetStateName());
@@ -460,11 +485,17 @@ state CaughtHarry
 		fDuration = PlayRandomSoundAndAnimSecondTime();
 		Sleep(fDuration);
 		PlayerHarry.ClientMessage("End   to say something second time................" $ string(self));
+		//DD39: run function in custom director
+		if ( bUseDirector )
+		{
+		  Director.TriggerCaughtEvent();
+		} else {
 		if ( EventName != 'None' )
 		{
-			PlayerHarry.ClientMessage("Trigger Event................" $ string(EventName));
-			TriggerEvent(EventName,None,None);
+		  PlayerHarry.ClientMessage("Trigger Event................" $ string(EventName));
+		  TriggerEvent(EventName,None,None);
 		}
+	}
 }
 
 state SaySomethingFirstTime
@@ -486,6 +517,12 @@ state SaySomethingFirstTime
 	{
 		Acceleration = vect(0.00,0.00,0.00);
 		Velocity = vect(0.00,0.00,0.00);
+		//DD39: Destroy the secret area cutscene in Adv7
+		if ( bDestroyCut && !bCutDestroyed )
+		{
+		  bCutDestroyed = True;
+		  TriggerEvent('DD39DestroyBannerStatueCut',None,None);
+		}
 	}
 	
 	//UTPT didn't add this for some reason -AdamJD
@@ -593,6 +630,22 @@ function PreBeginPlay()
 		return;
 	}
 	
+	//DD39: find the custom director
+	if (  bCouldWatchForHarry && bUseDirector )
+	{
+		foreach AllActors(Class'DD39Adv7SneakDirector',Director)
+		{
+		  break;
+		  
+		 //DD39: if it can't find it, set the bool to False
+		  if ( Director == None )
+		  {
+		    bUseDirector = False;
+		  }
+		}
+	}
+
+	
 	for(I = 0; I < WATCH_FOR_HARRY_ARRAY_SIZE; I++)
 	{
 		if ( BaseWatchAnim[I] == 'None' )
@@ -684,19 +737,33 @@ event Bump (Actor Other)
 {
 	local HChar A;
 	local bool bDoBump;
-
-	if ( Other.IsA('harry') && bCouldWatchForHarry &&  !PlayerHarry.bIsGoyle )
+	
+	// DD39: If Harry is dead, return.
+	if ( PlayerHarry.bHarryKilled )
+	{
+		return;
+	}
+	
+	if ( Other.IsA('harry') && bCouldWatchForHarry && !PlayerHarry.bIsGoyle )
 	{
 		if ( (EventName != 'None') &&  !HPHud(PlayerHarry.myHUD).bCutSceneMode )
 		{
 			PlayerHarry.ClientMessage("Trigger Event................" $ string(EventName));
 			PlayerHarry.GotoState('stateCutIdle');
+			//DD39: enable bool to fix Harry sliding when caught in mid-air
+			PlayerHarry.bIsCaught = True;
 			GotoState('CaughtHarry');
 		}
 		return;
 	}
 	if ( bUseBumpLine && (Other == Level.PlayerHarryActor) )
 	{
+		// DD39: If Harry is in a cutscene, don't do bump lines.
+		if ( PlayerHarry.bIsCaptured )
+		{
+			return;
+		}
+		
 		bDoBump = True;
 		foreach AllActors(Class'HChar',A)
 		{
@@ -746,7 +813,7 @@ function DoBumpLine (optional bool bJustTalk, optional string AlternateBumpLineS
 	{
 		sSetID = AlternateBumpLineSet;
 		Level.PlayerHarryActor.ClientMessage("BUMPLINES:" $ string(self) $ " looking for BumpLineSet:" $ sSetID);
-		// DivingDeep39: Replaced "BumpSet" with the BumpSetFile var.
+		// DD39: DivingDeep39: Replaced "BumpSet" with the BumpSetFile var.
 		//sSayTextID = Localize(sSetID, "line" $(Rand(int(Localize(sSetID, "Count", "BumpSet")))), "BumpSet");
 		sSayTextID = Localize(sSetID, "line" $(Rand(int(Localize(sSetID, "Count", BumpSetFile)))), BumpSetFile);
 	} 
@@ -764,7 +831,7 @@ function DoBumpLine (optional bool bJustTalk, optional string AlternateBumpLineS
 		Level.PlayerHarryActor.ClientMessage("BUMPLINES:" $ string(self) $ " looking for BumpLineSet:" $ BumpLineSet);
 		if ( bDoRandomBumpLine )
 		{
-			// DivingDeep39: Replaced "BumpSet" with the BumpSetFile var.
+			// DD39: DivingDeep39: Replaced "BumpSet" with the BumpSetFile var.
 			//rm = int(Localize(sSetID, "Count", "BumpSet"));
 			rm = int(Localize(sSetID, "Count", BumpSetFile));
 			ri = Rand(rm);
@@ -773,20 +840,20 @@ function DoBumpLine (optional bool bJustTalk, optional string AlternateBumpLineS
 				ri = (ri + 1) % rm;
 				lastRandomBumpLine = ri;
 			}
-			// DivingDeep39: Replaced "BumpSet" with the BumpSetFile var.
+			// DD39: DivingDeep39: Replaced "BumpSet" with the BumpSetFile var.
 			//sSayTextID = Localize(sSetID, "line" $ri,"BumpSet");
 			sSayTextID = Localize(sSetID, "line" $ri,BumpSetFile);
 		} 
 		else 
 		{
-			// DivingDeep39: Replaced "BumpSet" with the BumpSetFile var.
+			// DD39: DivingDeep39: Replaced "BumpSet" with the BumpSetFile var.
 			//sSayTextID = Localize(sSetID, "line" $curBumpLine,"BumpSet");
 			sSayTextID = Localize(sSetID, "line" $curBumpLine,BumpSetFile);
 			curBumpLine++ ;
 			if ( InStr(sSayTextID,"<") > -1 )
 			{
 				curBumpLine = 0;
-				// DivingDeep39: Replaced "BumpSet" with the BumpSetFile var.
+				// DD39: DivingDeep39: Replaced "BumpSet" with the BumpSetFile var.
 				//sSayTextID = Localize(sSetID,"line" $curBumpLine,"BumpSet");
 				sSayTextID = Localize(sSetID,"line" $curBumpLine,BumpSetFile);
 			}
@@ -798,7 +865,7 @@ function DoBumpLine (optional bool bJustTalk, optional string AlternateBumpLineS
 		}
 	}
 	Level.PlayerHarryActor.ClientMessage("BUMPLINES:" $ string(self) $ " looking for BumpLine ID:" $ sSayTextID);
-	// DivingDeep39: Replaced " "all" " and "BumpDialog" with the Section and LocalizationFile vars.
+	// DD39: DivingDeep39: Replaced " "all" " and "BumpDialog" with the Section and LocalizationFile vars.
 	//sSayText = Localize("all",sSayTextID,"BumpDialog");
 	sSayText = Localize(Section,sSayTextID,LocalizationFile);
 	if ( InStr(sSayText,"<?") > -1 )
@@ -814,7 +881,7 @@ function DoBumpLine (optional bool bJustTalk, optional string AlternateBumpLineS
 		Level.PlayerHarryActor.CutCommand("capture");
 	}
 	CutNotifyActor = self;
-	// DivingDeep39: Replaced "AllDialog" with the Package var.
+	// DD39: DivingDeep39: Replaced "AllDialog" with the Package var.
 	//dlgSound = Sound(DynamicLoadObject("AllDialog." $sSayTextID,Class'Sound'));
 	dlgSound = Sound(DynamicLoadObject(Package$"."$sSayTextID,Class'Sound'));
 	if ( dlgSound != None )
@@ -1089,6 +1156,12 @@ simulated function PlayFootStep()
 	local Sound Footstep2;
 	local Sound Footstep3;
 
+	// DD39: Omega: Make sure we don't play these if not relevant in gamestate
+    if( !bInCurrentGameState )
+    {
+        return;
+    }
+	
 	if ( FootRegion.Zone.bWaterZone )
 	{
 		PlaySound(WaterStep,SLOT_Interact,1.0,False,1000.0,1.0);
@@ -1273,7 +1346,7 @@ defaultproperties
 
     Buoyancy=118.80
 	
-	// DivingDeep39: New vars' defaults for stock compatibility
+	// DD39: DivingDeep39: New vars' defaults for stock compatibility
 	BumpSetFile="BumpSet"
 	
 	LocalizationFile="BumpDialog"	

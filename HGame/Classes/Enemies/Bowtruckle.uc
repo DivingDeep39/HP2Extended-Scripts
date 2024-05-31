@@ -317,7 +317,8 @@ function Bump (Actor Other)
   {
     return;
   }
-  if ( GetStateName() == 'stateAttackHarry' )
+  //if ( GetStateName() == 'stateAttackHarry' ) 
+  if ( IsInState('stateAttackHarry') )
   {
     return;
   }
@@ -371,15 +372,17 @@ function Tick (float deltaT)
     return;
   }
   Distance = VSize(PlayerHarry.Location - Location);
-  if ( Distance > SightRadius )
+  //DD39: Added "|| !PlayerCanSeeMe()"
+  if ( Distance > SightRadius || !PlayerCanSeeMe() )
   {
-    return;
+	  return;
   }
   if (  !IsInState('stateIdle') &&  !IsInState('stateGoSomeWhere') )
   {
     return;
   }
-  if ( Distance > startExcited )
+  //DD39: Added "&& PlayerCanSeeMe() && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet')"
+  if ( Distance > startExcited && PlayerCanSeeMe() && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
   {
     if ( FRand() < TauntProbability )
     {
@@ -389,12 +392,18 @@ function Tick (float deltaT)
     }
     return;
   }
-  if ( Distance > startAttack )
+  //DD39: Added "&& PlayerCanSeeMe()&& !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet')"
+  if ( Distance > startAttack && PlayerCanSeeMe() && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
   {
     GotoState('stateThrow');
     return;
   }
-  GotoState('stateGotoHarry');
+  //DD39: Added "PlayerCanSeeMe() && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet')"
+  if ( PlayerCanSeeMe() && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
+  {
+    GotoState('stateGotoHarry');
+	return;
+  }
 }
 
 auto state stateIdle
@@ -429,6 +438,8 @@ begin:
   TurnTo(vHome);
   DesiredRotation.Yaw = Rotation.Yaw;
   MoveTo(vHome);
+  // DD39: Fix walking on the spot
+  LoopAnim('Idle');
   GotoState('stateIdle');
 }
 
@@ -441,18 +452,32 @@ begin:
   TurnTo(vNewPos);
   DesiredRotation.Yaw = Rotation.Yaw;
   MoveTo(vNewPos);
+  // DD39: Fix walking on the spot
+  LoopAnim('Idle');
   GotoState('stateIdle');
 }
 
 state stateThrow
 {
+  //DD39: Added Tick function to prevent animation freezing
+  function Tick (float deltaT)
+  {
+    Global.Tick(deltaT);
+	
+	if ( !PlayerCanSeeMe() )
+	{
+	  aHolding.Destroy();
+	  GoToState('stateIdle');
+	}
+  }
+
 begin:
   Acceleration = vect(0.00,0.00,0.00);
   Velocity = vect(0.00,0.00,0.00);
   TurnTo(PlayerHarry.Location);
   DesiredRotation.Yaw = Rotation.Yaw;
   GetObjectToThrow();
-  PlaySoundSurprise();
+  PlaySoundSurprise(); 
   PlayAnim('Attack');
   Sleep(0.5);
   vNewPos = ComputeTrajectoryByTime(objectToThrow.Location,PlayerHarry.Location,ThrowTime,-256.0);
@@ -479,6 +504,17 @@ begin:
 
 state stateTaunt
 {
+  //DD39: Added Tick function to prevent animation freezing
+  function Tick (float deltaT)
+  {
+    Global.Tick(deltaT);
+	
+	if ( !PlayerCanSeeMe() )
+	{
+	  GoToState('stateIdle');
+	}
+  }
+  
 begin:
   Acceleration = vect(0.00,0.00,0.00);
   Velocity = vect(0.00,0.00,0.00);
@@ -520,6 +556,8 @@ begin:
     aHolding.Destroy();
   }
   bHidden = True;
+  //DD39: fix their collision persisting right after they disappear
+  SetCollision(False,False,False);
   Sleep(SoundDuration);
   DestroyActor(self);
   // eVulnerableToSpell = 19;
@@ -529,11 +567,24 @@ begin:
 
 state stateGotoHarry
 {
+  //DD39: Added Tick function to prevent animation freezing
+  function Tick (float deltaT)
+  {
+    Global.Tick(deltaT);
+	
+	if ( !PlayerCanSeeMe() )
+	{
+	  GoToState('stateIdle');
+	}
+  }
+  
 begin:
   LoopAnim('walkexcited');
   TurnTo(PlayerHarry.Location);
   DesiredRotation.Yaw = Rotation.Yaw;
   MoveTo(PlayerHarry.Location);
+  // DD39: Fix walking on the spot
+  LoopAnim('Idle');
   GotoState('stateIdle');
 }
 

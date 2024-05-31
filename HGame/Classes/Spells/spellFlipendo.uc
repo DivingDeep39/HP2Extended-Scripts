@@ -4,6 +4,8 @@
 
 class spellFlipendo extends baseSpell;
 
+
+
 event BeginEvent()
 {
 }
@@ -55,6 +57,8 @@ function bool IsRelevantToMover()
   return True;
 }
 
+//    fxHitParticleEffectClass=Class'HPParticle.Flip_hit'
+
 defaultproperties
 {
     // SpellType=13
@@ -66,7 +70,7 @@ defaultproperties
 
     fxFlyParticleEffectClass=Class'HPParticle.Flip_fly'
 
-    fxHitParticleEffectClass=Class'HPParticle.Flip_hit'
+    fxHitParticleEffectClass=Class'DD39Flip_hit'
 
     SpellIncantation="spells1"
 
@@ -74,4 +78,10 @@ defaultproperties
 
     // DrawType=0
 	DrawType=DT_None
+	
+	//DD39: hue change
+	LightHue=20
+
+	//DD39: radius change
+	LightRadius=8
 }

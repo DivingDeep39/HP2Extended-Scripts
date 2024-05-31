@@ -42,7 +42,9 @@ var bool bFirstTime;
 var bool bMastered;
 var bool bSentWarnTimeEvent;
 var bool bFastForwardTally;
-var StatusItemJellybeans siJellybeans;
+// DD39: Cleared for Secrets:
+//var StatusItemJellybeans siJellybeans;
+var StatusItemSecrets siSecrets;
 var StatusItemGryffindorPts siGryffPts;
 var StatusItemStars siStars;
 var(ChallengeManager) name nameChallengeLevel;
@@ -71,7 +73,9 @@ function BeginChallenge()
 	{
 		break;
 	}*/
-	siJellybeans = StatusItemJellybeans(PlayerHarry.managerStatus.GetStatusItem(Class'StatusGroupJellybeans',Class'StatusItemJellybeans'));
+	// DD39: Cleared for Secrets:
+	//siJellybeans = StatusItemJellybeans(PlayerHarry.managerStatus.GetStatusItem(Class'StatusGroupJellybeans',Class'StatusItemJellybeans'));
+	siSecrets = StatusItemSecrets(PlayerHarry.managerStatus.GetStatusItem(Class'StatusGroupSecrets',Class'StatusItemSecrets'));
 	siGryffPts = StatusItemGryffindorPts(PlayerHarry.managerStatus.GetStatusItem(Class'StatusGroupHousePoints',Class'StatusItemGryffindorPts'));
 	siStars = StatusItemStars(PlayerHarry.managerStatus.GetStatusItem(Class'StatusGroupStars',Class'StatusItemStars'));
 	HPHud(PlayerHarry.myHUD).RegisterChallengeManager(self);
@@ -702,8 +706,11 @@ state PostTallyHoldPoints
 		local int nPointsIconX;
 		local int nPointsIconY;
 
-		local int nBeansIconX;
-		local int nBeansIconY;
+		// DD39: Cleared for Secrets:
+		//local int nBeansIconX;
+		//local int nBeansIconY;
+		local int nSecretsIconX;
+		local int nSecretsIconY;
 
 		local int nStarIconX;
 		local int nStarIconY;
@@ -741,18 +748,26 @@ state PostTallyHoldPoints
 		siGryffPts.DrawSpecifiedCount(Canvas,nPointsIconX,nPointsIconY,fDrawScale,nAwardGryffPoints);
 
 		// Omega: Introduce the HScale to the offset
-		nBeansIconX = nPointsIconX - ((siJellybeans.GetHudIconUSize() + 30) * fScaleFactor);
+		// DD39: nBeansIconX = nPointsIconX - ((siJellybeans.GetHudIconUSize() + 30) * fScaleFactor);
 		//nBeansIconX = nPointsIconX - ((siJellybeans.GetHudIconUSize() + 30) );
-		nBeansIconY = nPointsIconY + (siGryffPts.GetHudIconVSize() / 2) * fScaleFactor - (siJellybeans.GetHudIconVSize() / 2) * fScaleFactor;
+		// DD39: nBeansIconY = nPointsIconY + (siGryffPts.GetHudIconVSize() / 2) * fScaleFactor - (siJellybeans.GetHudIconVSize() / 2) * fScaleFactor;
+		
+		//DD39: Added Secrets:
+		nSecretsIconX = nPointsIconX - ((siSecrets.GetHudIconUSize() + 30) * fScaleFactor);
+		nSecretsIconY = nPointsIconY + (siGryffPts.GetHudIconVSize() / 2) * fScaleFactor - (siSecrets.GetHudIconVSize() / 2) * fScaleFactor;
 
 		// Omega: Align
-		AlignXToCenter(Canvas, nBeansIconX);
+		// DD39: Commented Out Omega's addition: AlignXToCenter(Canvas, nBeansIconX);
+		// DD39: Added AlignXToCenter for nSecretsIconX
+		AlignXToCenter(Canvas, nSecretsIconX);
 
 		// Omega: ??? Someone copy code on accident? lol
 		//Canvas.SetPos(nStarIconX,nStarIconY);
 
 		// Omega: SI's compute own drawscale, don't feed it our calc here or they reduce as screen gets wider
-		siJellybeans.DrawItem(Canvas,nBeansIconX,nBeansIconY,fScaleFactor);
+		// DD39: siJellybeans.DrawItem(Canvas,nBeansIconX,nBeansIconY,fScaleFactor);
+		// DD39: Added Secrets:
+		siSecrets.DrawItem(Canvas,nSecretsIconX,nSecretsIconY,fScaleFactor);
 
 		nStarIconX = nPointsIconX + ((siGryffPts.GetHudIconUSize() + 30) * fScaleFactor);
 		//nStarIconX = nPointsIconX + ((siGryffPts.GetHudIconUSize() + 30) );

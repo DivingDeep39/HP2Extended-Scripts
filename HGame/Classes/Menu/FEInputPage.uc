@@ -212,7 +212,11 @@ function LocalizeStrings()
 	InQuidditch_LabelList[0] 	= GetLocalFEString("Quidditch_0052");
 	InWizardDuel_LabelList[0] 	= GetLocalFEString("Options_0039");
 	KeyboardText 				= GetLocalFEString("Options_0018");
-	InvertBroomText 			= GetLocalFEString("Flying_0003");
+	
+	// DD39: Replacing text
+	//InvertBroomText 			= GetLocalFEString("Flying_0003");
+	InvertBroomText				= Localize("all", "FEInput_Flying_Text", "Extended_Subs");
+	
 	optionsText 				= GetLocalFEString("Options_0040");
 
 	for(I = 0; I < 255; I++)
@@ -224,7 +228,11 @@ function LocalizeStrings()
 	MouseSmoothText 			= "Mouse Smoothing";
 	MiscText 					= GetLocalFEString("Options_0042");
 	InGame_Text 				= GetLocalFEString("Options_0036");
-	InQuidditch_Text 			= GetLocalFEString("Options_0037");
+	
+	// DD39: Replacing label
+	//InQuidditch_Text 			= GetLocalFEString("Options_0037");
+	InQuidditch_Text			= Localize("all", "FEInput_Flying_Label", "Extended_Subs");
+	
 	InWizardDuel_Text 			= GetLocalFEString("Options_0038");
 	OrString 					= " " $ GetLocalFEString("Options_0045") $ " ";
 	AutoJumpText 				= GetLocalFEString("Options_0046");

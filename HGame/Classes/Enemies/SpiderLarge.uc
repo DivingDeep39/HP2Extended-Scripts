@@ -181,7 +181,18 @@ state AttackHarry
   {	
 	Global.Tick(DeltaTime);
 
-	if ( ReadyPosition() ==  true  && (baseHud(playerharry.myHud).bCutSceneMode == false)  )
+	//DD39: if Harry goes out of SightRadius, stop
+    if ( (VSize(PlayerHarry.Location - Location) > SightRadius) && !PlayerCanSeeMe() /*&& (currentMarker == None)*/ )
+	{
+	  //DD39: Added Velocity and Acceleration to avoid sliding
+	  Velocity = vect(0.00,0.00,0.00);
+	  Acceleration = vect(0.00,0.00,0.00);
+      GroundSpeed = NormalSpeed;
+	  GotoState('RandomWait');
+	}
+	//DD39: Added "&& !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet')"
+	//		and replaced "baseHud(playerharry.myHud).bCutSceneMode == false" with "!PlayerHarry.bIsCaptured"
+	if ( ReadyPosition() ==  true  && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
 	{
 	  GotoState('stateBiteHarry');
 	}
@@ -232,7 +243,11 @@ state stateBiteHarry
   Sleep(0.04);
   if ( VSize(PlayerHarry.Location - Location) < savedCollision + PlayerHarry.CollisionRadius )
   {
-    PlayerHarry.TakeDamage(fDamageAmount,Instigator,vect(0.00,0.00,0.00),vect(0.00,0.00,0.00),'largeSpider');
+    //DD39: Added checks
+	if ( !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
+	{
+	  PlayerHarry.TakeDamage(fDamageAmount,Instigator,vect(0.00,0.00,0.00),vect(0.00,0.00,0.00),'largeSpider');
+	}
   }
   Velocity = Normal(Location - PlayerHarry.Location) * GroundSpeed;
   Acceleration = Normal(Location - PlayerHarry.Location) * GroundSpeed * 2;
@@ -316,7 +331,8 @@ state OutForTheCount
  begin:
   // eVulnerableToSpell = 0;
   eVulnerableToSpell = SPELL_None;
-  SetCollisionSize(15.0,20.0);
+  //DD39: walk through dead spiders
+  SetCollision(False,False,False);
   if ( bDoEvent == True )
   {
     TriggerEvent('OutForTheCount',self,None);

@@ -52,8 +52,10 @@ function TransitionUpdateHousepoints (string strTransitionLetter)
 	} 
 	else if ( strTransitionLetter ~= "B" )
     {
-		nAddRavenclaw 	= RandRange(35.0,70.0);
-		nAddHufflepuff 	= RandRange(40.0,75.0);
+		// DD39: nAddRavenclaw 	= RandRange(35.0,70.0) is now:
+		nAddRavenclaw 	= RandRange(40.0,75.0);
+		// DD39: nAddHufflepuff 	= RandRange(40.0,75.0) is now:
+		nAddHufflepuff 	= RandRange(35.0,70.0);
 		nAddSlytherin 	= RandRange(60.0,110.0);
 	}
 	else if ( strTransitionLetter ~= "C" )
@@ -64,8 +66,10 @@ function TransitionUpdateHousepoints (string strTransitionLetter)
 	} 
 	else if ( strTransitionLetter ~= "D" )
 	{
-		nAddRavenclaw 	= RandRange(100.0,150.0);
-		nAddHufflepuff 	= RandRange(80.0,160.0);
+		// DD39: nAddRavenclaw 	= RandRange(100.0,150.0) is now:
+		nAddRavenclaw 	= RandRange(100.0,160.0);
+		// DD39: nAddHufflepuff 	= RandRange(80.0,160.0) is now:
+		nAddHufflepuff 	= RandRange(80.0,150.0);
 		nAddSlytherin 	= RandRange(190.0,230.0);
 	}
 	else if ( strTransitionLetter ~= "E" )
@@ -87,7 +91,16 @@ function TransitionUpdateHousepoints (string strTransitionLetter)
 	GetStatusItem(Class'StatusItemRavenclawPts').IncrementCount(nAddRavenclaw);
 	GetStatusItem(Class'StatusItemHufflePuffPts').IncrementCount(nAddHufflepuff);
 	GetStatusItem(Class'StatusItemSlytherinPts').IncrementCount(nAddSlytherin);
-	ResolveTies();
+	
+	// DD39: Added condition to run the new function.
+	if ( strTransitionLetter ~= "F" )
+	{
+		PutRavenAhead();
+	}
+	else
+	{
+		ResolveTies();
+	}
 }
 
 function QuidditchUpdateHousepoints (int nMatch)
@@ -160,7 +173,14 @@ function bool CutCommand (string Command, optional string cue, optional bool bFa
 		TransitionUpdateHousepoints(strTransitionLetter);
 		CutCue(cue);
 		return True;
-	} 
+	}
+	// DD39: New cut command to put Ravenclaw ahead of Hufflepuff.
+	else if ( sActualCommand ~= "PutRavenAhead" )
+	{
+		PutRavenAhead();
+		CutCue(cue);
+		return True;
+	}
 	else 
 	{
 		return False;
@@ -207,8 +227,9 @@ function ResolveTies()
 	{
 		return;
 	}
-	AdjustIfTie(siRavenclawPts,siGryffindorPts,siHufflepuffPts,siSlytherinPts);
+	// DD39: Moved "AdjustIfTie(siHufflepuffPts,..." up over Ravenclaw.
 	AdjustIfTie(siHufflepuffPts,siRavenclawPts,siGryffindorPts,siSlytherinPts);
+	AdjustIfTie(siRavenclawPts,siGryffindorPts,siHufflepuffPts,siSlytherinPts);
 	AdjustIfTie(siSlytherinPts,siHufflepuffPts,siRavenclawPts,siGryffindorPts);
 }
 
@@ -288,13 +309,17 @@ function PutGryffInLead()
 	nHuffPts 	= GetStatusItem(Class'StatusItemHufflePuffPts').GetCount();
 	nSlythPts 	= GetStatusItem(Class'StatusItemSlytherinPts').GetCount();
 	
-	if ( nHuffPts <= nRavenPts )
+	// DD39: Inverted "nHuffPts <= nRavenPts".
+	if ( nRavenPts <= nHuffPts )
 	{
-		nHuffPts = nRavenPts + RandRange(1.0,10.0);
+		// DD39: Inverted "nHuffPts = nRavenPts + RandRange(1.0,10.0);".
+		nRavenPts = nHuffPts + RandRange(1.0,10.0);
 	}
-	if ( nSlythPts <= nHuffPts )
+	// DD39: Replaced "nSlythPts <= nHuffPts".
+	if ( nSlythPts <= nRavenPts )
 	{
-		nSlythPts = nHuffPts + RandRange(1.0,10.0);
+		// DD39: Replaced "nHuffPts".
+		nSlythPts = nRavenPts + RandRange(1.0,10.0);
 	}
 	if ( nGryffPts <= nSlythPts )
 	{
@@ -305,6 +330,41 @@ function PutGryffInLead()
 	GetStatusItem(Class'StatusItemHufflePuffPts').SetCount(nHuffPts);
 	GetStatusItem(Class'StatusItemSlytherinPts').SetCount(nSlythPts);
 	GetStatusItem(Class'StatusItemGryffindorPts').SetCount(nGryffPts);
+}
+
+// DD39: New function to put Ravenclaw above Hufflepuff.
+function PutRavenAhead()
+{
+	local int nGryffPts;
+	local int nSlythPts;
+	local int nRavenPts;
+	local int nHuffPts;
+
+	nGryffPts 	= GetStatusItem(Class'StatusItemGryffindorPts').GetCount();
+	nRavenPts 	= GetStatusItem(Class'StatusItemRavenclawPts').GetCount();
+	nHuffPts 	= GetStatusItem(Class'StatusItemHufflePuffPts').GetCount();
+	nSlythPts 	= GetStatusItem(Class'StatusItemSlytherinPts').GetCount();
+	
+	if ( nRavenPts <= nHuffPts )
+	{
+		nRavenPts = nHuffPts + RandRange(1.0,10.0);
+	}
+	
+	if ( nSlythPts <= nRavenPts )
+	{
+		nSlythPts = nRavenPts + RandRange(1.0,10.0);
+	}
+		
+	if ( nGryffPts <= nRavenPts )
+	{
+		nGryffPts = nRavenPts + RandRange(1.0,10.0);
+	}
+	
+	GetStatusItem(Class'StatusItemRavenclawPts').SetCount(nRavenPts);
+	GetStatusItem(Class'StatusItemSlytherinPts').SetCount(nSlythPts);
+	GetStatusItem(Class'StatusItemGryffindorPts').SetCount(nGryffPts);
+	
+	ResolveTies();
 }
 
 defaultproperties

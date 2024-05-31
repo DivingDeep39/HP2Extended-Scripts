@@ -42,7 +42,9 @@ state HitBySpell
 		fxHitParticleEffect.Shutdown();
 		fxReactParticleEffect.Shutdown();
 		killAttachedParticleFX(0.0);
-		bHidden = True;
+		//bHidden = True;
+		//DD39: prevents the same anchor from being multiple times
+		Destroy();
 }
 
 defaultproperties

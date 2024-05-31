@@ -55,7 +55,7 @@ defaultproperties
 
     fxFlyParticleEffectClass=Class'HPParticle.Skurge_fly'
 
-    fxHitParticleEffectClass=Class'HPParticle.SkurgeSpell_hit'
+    fxHitParticleEffectClass=Class'DD39SkurgeSpell_hit'
 
     SpellIncantation="spells3"
 
@@ -65,4 +65,7 @@ defaultproperties
 
     // DrawType=0
 	DrawType=DT_None
+	
+	//DD39: radius change
+	LightRadius=8
 }

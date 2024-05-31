@@ -204,4 +204,10 @@ defaultproperties
 
     // DrawType=0
 	DrawType=DT_None
+	
+	//DD39: hue change
+	LightHue=22
+	
+	//DD39: Added so the spell can spawn the flame actor
+	bRealisticBounce=True
 }

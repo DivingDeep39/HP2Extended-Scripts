@@ -9,7 +9,9 @@ const strVENDORBAR_LEFT= "HP2_Menu.Icons.HP2VendorBarLeft";
 const strVENDORBAR_RIGHT= "HP2_Menu.Icons.HP2VendorBarRight";
 const strVENDORBAR_BUTTON_NORMAL= "HP2_Menu.Icons.HP2ConfirmYes";
 const strVENDORBAR_BUTTON_OVER= "HP2_Menu.Icons.HP2ConfirmYes_Highlight";
-const strVENDORITEM_NIMBUS= "HP2_Menu.Icons.HP2Nimbus2001";
+// DD39: New Icon:
+//const strVENDORITEM_NIMBUS= "HP2_Menu.Icons.HP2Nimbus2001";
+const strVENDORITEM_NIMBUS= "Extended_Textures.Icons.HP2Nimbus2001";
 const strVENDORITEM_QARMOR= "HP2_Menu.Icons.HP2QuidditchArmor";
 const strVENDORITEM_FMUCUS= "HP2_Menu.Icons.HP2VendorFMucus";
 const strVENDORITEM_WBARK= "HP2_Menu.Icons.HP2VendorWBark";

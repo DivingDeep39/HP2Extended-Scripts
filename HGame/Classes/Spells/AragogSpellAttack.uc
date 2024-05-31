@@ -87,7 +87,8 @@ state StateFlying
   
   function ProcessTouch (Actor Other, Vector HitLocation)
   {
-    if (  !Other.IsA('SpiderMarker') &&  !Other.IsA('largeSpider') &&  !Other.IsA('spellWeb') )
+	// DD39: Replaced "!Other.IsA('spellWeb')" with "!Other.IsA('Projectile')" to fix Aragog backfiring
+	if (  !Other.IsA('SpiderMarker') &&  !Other.IsA('largeSpider') && /*!Other.IsA('spellWeb')*/ !Other.IsA('Projectile') )
     {
       Aragog(Owner).createWeb(OldLocation);
       if ( Other.IsA('harry') )

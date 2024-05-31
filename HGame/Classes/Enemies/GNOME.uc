@@ -21,12 +21,14 @@ var Vector tempTargetDir;
 var Vector vTargetLocation;
 var Actor aTargetGoody;
 var int iBeans;
-var int Lives;
+//DD39: removed because useless
+//var int Lives;
 var int LastAnimFrame;
 var bool bPlayThrowAnim;
 var bool bHome;
 var bool bJustCreated;
-var float HitByFlipendoTime;
+//DD39: removed because useless
+//var float HitByFlipendoTime;
 var float SoundDuration;
 var float SoundPlayTime;
 var bool bCurrentSoundOver;
@@ -48,6 +50,8 @@ function PlayerCutCapture()
 
 function PlayerCutRelease()
 {
+  //DD39: Go back to be non grabbable
+  bObjectCanBePickedUp = False;
   GotoState('stateIdle');
 }
 
@@ -235,7 +239,8 @@ function PlaySoundAndSetDuration (Sound snd)
   {
     return;
   }
-  if ( baseHUD(PlayerHarry.myHUD).bCutSceneMode )
+  // DD39: Replaced "baseHUD(PlayerHarry.myHUD).bCutSceneMode" with "PlayerHarry.bIsCaptured"
+  if ( PlayerHarry.bIsCaptured )
   {
     return;
   }
@@ -619,9 +624,15 @@ function Bump (Actor Other)
   {
     return;
   }
-  if ( GetStateName() != 'stateGotoHarry' )
+  //DD39: replaced ( GetStateName() != 'stateGotoHarry' )
+  if ( !IsInState('stateGotoHarry') )
   {
     return;
+  }
+  // DD39: if Harry's dead, go somewhere else
+  if ( PlayerHarry.bHarryKilled )
+  {
+	GotoState('stateGoSomeWhere');
   }
   beans = PlayerHarry.JellyBeansCount();
   GetSomethingFromHarry(beans,0);
@@ -633,14 +644,17 @@ function Touch (Actor Other)
   Super.Touch(Other);
   if ( Other.IsA('Jellybean') || Other.IsA('WiggenWell') )
   {
-    if ( (GetStateName() != 'stateGettingUp') && (GetStateName() != 'stateDied') )
+    // DD39: replaced (GetStateName() != 'stateGettingUp') && (GetStateName() != 'stateDied')
+	//		  and added "&& ( !IsInState('stateHitByFlip') ) && ( !IsInState('stateBeingThrown') )":
+	if ( ( !IsInState('stateGettingUp') ) && ( !IsInState('stateDied') ) && ( !IsInState('stateHitByFlip') ) && ( !IsInState('stateBeingThrown') ) )
     {
       GotoState('statePickupTargetObject');
     }
   }
   if ( (aHolding == None) && Other.IsA('Horklumps') )
   {
-    if ( GetStateName() != 'stateGettingUp' )
+    //DD39: replaced GetStateName() != 'stateGettingUp'
+	if ( !IsInState('stateGettingUp') )
     {
       GotoState('stateEatMushroom');
     }
@@ -657,17 +671,19 @@ function bool HandleSpellFlipendo (optional baseSpell spell, optional Vector vHi
 function Tick (float Delta)
 {
   Super.Tick(Delta);
-  if ( HitByFlipendoTime > 0 )
+  //DD39: removed because useless
+  /*if ( HitByFlipendoTime > 0 )
   {
     HitByFlipendoTime -= Delta;
-  }
+  }*/
   SoundPlayTime += Delta;
   if ( SoundPlayTime > SoundDuration )
   {
     bCurrentSoundOver = True;
     SoundPlayTime = 0.0;
   }
-  if ( (GetStateName() == 'stateBeingThrown') || (HitByFlipendoTime > 0) )
+  //DD39: replaced GetStateName() with IsInState and added IsInState('stateHitByFlip')
+  if ( ( IsInState('stateBeingThrown') ) || ( IsInState('stateHitByFlip') ) /*|| (HitByFlipendoTime > 0)*/ )
   {
     bDespawnable = True;
   } else {
@@ -676,12 +692,14 @@ function Tick (float Delta)
   if ( bDespawned )
   {
     bDespawnable = True;
-    if ( GetStateName() != 'stateDied' )
+	//DD39: replaced GetStateName() != 'stateDied'
+    if ( ( !IsInState('stateDied') ) )
     {
       GotoState('stateDied');
     }
   }
-  if ( (Owner == PlayerHarry) && (GetStateName() != 'stateWasHoldingByHarry') )
+  //DD39: replaced (GetStateName() != 'stateWasHoldingByHarry')
+  if ( (Owner == PlayerHarry) && ( ( !IsInState('stateWasHoldingByHarry') ) ) )
   {
     GotoState('stateWasHoldingByHarry');
   }
@@ -693,7 +711,8 @@ function Landed (Vector HitNormal)
   Velocity = vect(0.00,0.00,0.00);
   Super.Landed(HitNormal);
   SetCollisionSize(savedCollisionRadius,savedCollisionHeight);
-  if ( GetStateName() != 'stateDied' )
+  //DD39: replaced GetStateName() != 'stateDied'
+  if ( !IsInState('stateDied') )
   {
     GotoState('stateGettingUp');
   }
@@ -807,6 +826,13 @@ function DestroyHoldingAndTakeAwayAllGoodies()
 {
   iBeans = 0;
   DestroyHolding();
+}
+
+// DD39: Destroy holding and drop beans
+function DestroyHoldingAndDropBeans()
+{
+	GnomeDropBeans();
+	DestroyHolding();
 }
 
 function PlayIdleAnim()
@@ -1006,6 +1032,9 @@ begin:
   LoopRunAnimAttack();
   MoveTo(vHome);
   bHome = True;
+  // DD39: Added Acceleration and Velocity.
+  Acceleration = vect(0.00,0.00,0.00);
+  Velocity = vect(0.00,0.00,0.00);
   GotoState('stateIdle');
 }
 
@@ -1023,7 +1052,8 @@ state stateBeingThrown
   SetCollisionSize(10.0,13.0);
   PlaySoundGetsThrown();
   SoundDuration = 0.0;
-  Lives = 2;
+  //DD39: removed because useless
+  //Lives = 2;
   PlayAnim('KnockBack',1.5);
   FinishAnim();
   Sleep(1.0);
@@ -1039,6 +1069,9 @@ begin:
   LoopAnim('runscared');
   TurnTo(vNewLoc);
   MoveTo(vNewLoc);
+  // DD39: Added Acceleration and Velocity.
+  Acceleration = vect(0.00,0.00,0.00);
+  Velocity = vect(0.00,0.00,0.00);
   DesiredRotation.Yaw = Rotation.Yaw;
   PlayIdleAnim();
   FinishAnim();
@@ -1049,17 +1082,19 @@ state stateHitByFlip
 {
   function BeginState()
   {
-    if ( Lives > 0 )
+    //DD39: removed because useless
+	/*if ( Lives > 0 )
     {
       Lives--;
-    }
+    }*/
     GnomeDropBeans();
     DestroyHolding();
     PlaySoundOuch();
     PlayAnim('KnockBack');
     vTargetDir = Normal(PlayerHarry.Location - Location);
     DesiredRotation = rotator(vTargetDir);
-    HitByFlipendoTime = 2.0;
+	//DD39: removed because useless
+    //HitByFlipendoTime = 2.0;
   }
   
  begin:
@@ -1076,7 +1111,9 @@ begin:
   {
     PlayerHarry.ClientMessage("" $ string(Name) $ ": stateGettingUp");
   }
-  DestroyHoldingAndTakeAwayAllGoodies();
+  // DD39: Replaced with new function that destroys holding and drops beans
+  //DestroyHoldingAndTakeAwayAllGoodies();
+  DestroyHoldingAndDropBeans();
   SetCollisionSize(savedCollisionRadius,savedCollisionHeight);
   if (  !bDespawned )
   {
@@ -1093,7 +1130,8 @@ begin:
   Sleep(2.0);
   PlayAnim('downdizzy');
   FinishAnim();
-  if ( bDespawned || (Lives == 0) )
+  //DD39: removed because useless
+  if ( bDespawned /*|| (Lives == 0)*/ )
   {
     goto ('Begin');
   }
@@ -1130,7 +1168,8 @@ begin:
     if ( MyLineOfSightTo(PlayerHarry) )
     {
       vTargetDir = PlayerHarry.Location - Location;
-      if ( VSize(vTargetDir) < SightRadius )
+	  //DD39: Added "&& !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') && !PlayerHarry.bHarryKilled"
+      if ( VSize(vTargetDir) < SightRadius && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') && !PlayerHarry.bHarryKilled )
       {
         vNewLoc = Location + 20 * vTargetDir / VSize(vTargetDir);
         GotoState('stateGotoHarry');
@@ -1146,7 +1185,8 @@ begin:
       if ( MyLineOfSightTo(PlayerHarry) )
       {
         vTargetDir = PlayerHarry.Location - Location;
-        if ( VSize(vTargetDir) < SightRadius )
+		//DD39: Added "&& !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') && !PlayerHarry.bHarryKilled"
+        if ( VSize(vTargetDir) < SightRadius && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') && !PlayerHarry.bHarryKilled )
         {
           vNewLoc = PlayerHarry.Location;
           GotoState('stateGotoHarry');
@@ -1174,6 +1214,9 @@ begin:
   LoopRunAnimAttackBite();
   TurnTo(vNewLoc);
   MoveTo(vNewLoc);
+  // DD39: Added Acceleration and Velocity.
+  Acceleration = vect(0.00,0.00,0.00);
+  Velocity = vect(0.00,0.00,0.00);
   DesiredRotation.Yaw = Rotation.Yaw;
   GotoState('statePatrol');
 }
@@ -1219,6 +1262,9 @@ begin:
   LoopRunAnimNormal();
   TurnTo(vNewLoc);
   MoveTo(vNewLoc);
+  // DD39: Added Acceleration and Velocity.
+  Acceleration = vect(0.00,0.00,0.00);
+  Velocity = vect(0.00,0.00,0.00);
   DesiredRotation.Yaw = Rotation.Yaw;
   PlayIdleAnim();
   FinishAnim();
@@ -1346,7 +1392,8 @@ begin:
 
 defaultproperties
 {
-    Lives=2
+    //DD39: removed because useless
+	//Lives=2
 
     bCurrentSoundOver=True
 

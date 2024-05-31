@@ -13,7 +13,6 @@ enum CarLocations {
 };
 
 var FlyingCarHarry PlayerHarry;
-var MuggleMeterManager MuggleMeter;
 var FlyingFordPathGuide guide;
 var FlyingFordHedwig Hedwig;
 var Boeing747 Plane;
@@ -27,9 +26,9 @@ var() float fOverTownMeter;
 var() float fOverSheepMeter;
 var() float fOverPlaneMeter;
 var() float fResetMeter;
-var() float HedwigMaxDistance;
-var() float HedwigPrepivotDistanceFront;
-var() float HedwigPrepivotDistanceUp;
+//var() float HedwigMaxDistance;
+//var() float HedwigPrepivotDistanceFront;
+//var() float HedwigPrepivotDistanceUp;
 var float fWindViolence;
 var Vector vDirection;
 var float fTurbulence;
@@ -44,10 +43,30 @@ var int iLightningLoops;
 var float fTimeBetweenchanges;
 var CarLocations CarLocation;
 
+var() float CameraTrailDist;
+
+/*var() float BoostExpireTime;
+var() float BoostRechargeTime;
+var float fBoostCharge;
+var bool bBoostExpired;
+var bool bBoostRecharged;
+var bool bBoosting;*/
+
+var bool bPhaseTwo;
+var() float HudDelaySeconds;
+
+var DD39CarBoostBar CarBoostBar;
+var DD39CarHealthBar CarHealthBar;
+var MuggleMeterManager MuggleMeter;
+
+//var float fGuideTrackDist;
+//var() float GuideTrackDistMin;
+//var() float GuideTrackDistMax;
+
 function PreBeginPlay()
 {
-  local DynamicInterpolationPoint p;
-  local int Counter;
+  //local DynamicInterpolationPoint p;
+  //local int Counter;
 
   Super.PreBeginPlay();
 // JL001A:
@@ -56,50 +75,131 @@ function PreBeginPlay()
     // goto JL001A;
 	break;
   }
-  foreach AllActors(Class'MuggleMeterManager',MuggleMeter)
+  
+  /*foreach AllActors(Class'MuggleMeterManager',MuggleMeter)
   {
     // goto JL002F;
 	break;
-  }
-  foreach AllActors(Class'Boeing747',Plane)
+  }*/
+  /*foreach AllActors(Class'Boeing747',Plane)
   {
     // goto JL0044;
 	break;
-  }
-  PlayerHarry.ClientMessage("Make sure I get here");
-  guide = Spawn(Class'FlyingFordPathGuide',,,Location + Vec(200.0,50.0,0.0),Rotation);
-  guide.PathName = PlayerHarry.PathName;
+  }*/
+  guide = Spawn(Class'FlyingFordPathGuide',,,PlayerHarry.Location,PlayerHarry.Rotation);
+  guide.PathName = PlayerHarry.GuidePathName;
   guide.AirSpeedNormal = PlayerHarry.AirSpeedNormal;
-  Log("*************What is the pathname for the car  :  " $ string(PlayerHarry.PathName));
   PlayerHarry.guide = guide;
-  Hedwig = Spawn(Class'FlyingFordHedwig',,,Location + Vec(50.0,50.0,-50.0),Rotation);
+  HudDelaySeconds = 3;
+  //Hedwig = Spawn(Class'FlyingFordHedwig',,,Location + Vec(50.0,50.0,-50.0),Rotation);
 }
 
 function PostBeginPlay()
 {
   Super.PostBeginPlay();
+  //CarLocation = LOC_SAFE;
+  //fBoostCharge = 1.0;
+  CarBoostBar = Spawn(Class'DD39CarBoostBar');
+  CarBoostBar.Show(False);
+  CarHealthBar = Spawn(Class'DD39CarHealthBar');
+  CarHealthBar.Show(False);
+  MuggleMeter = Spawn(Class'MuggleMeterManager');
+  MuggleMeter.Show(False);
+  PlayerHarry.MuggleMeter = MuggleMeter;
+  MuggleMeter.SetOwner(PlayerHarry);
+  MuggleMeter.AttachToOwner();
+  //guide.GotoState('Fly');
   InitialState = 'GameIntro';
-  CarLocation = LOC_SAFE;
-  Hedwig.SetOwner(guide);
-  Hedwig.AttachToOwner();
-  Hedwig.bTrailerPrePivot = True;
-  Hedwig.PrePivot = Vec(HedwigPrepivotDistanceFront,0.0,HedwigPrepivotDistanceUp);
+  //Hedwig.SetOwner(guide);
+  //Hedwig.AttachToOwner();
+  //Hedwig.bTrailerPrePivot = True;
+  //Hedwig.PrePivot = Vec(HedwigPrepivotDistanceFront,0.0,HedwigPrepivotDistanceUp);
+}
+
+/*function BoostTick(float DeltaTime)
+{
+	local float fChargeDelta;
+	
+	if ( !PlayerHarry.bAllowBoost )
+	{
+		return;
+	}
+	
+	if ( ( PlayerHarry.bBroomBoost != 0 ) &&
+		( GetCurBoostCharge() > 0.0 ) && !bBoostExpired )
+	{
+		fChargeDelta = GetMaxBoostCharge() - GetCurBoostCharge();
+		
+		fBoostCharge -= (DeltaTime / BoostExpireTime * fChargeDelta );
+		
+		if ( GetCurBoostCharge() <= 0.0 )
+		{
+			Log(string(self)$": Boost has EXPIRED!");
+			bBoostExpired = True;
+			CarBoostBar.bBoostExpired = True;
+			fBoostCharge = 0.0;
+			guide.SplineSpeed = PlayerHarry.AirSpeedNormal;
+		}
+	}
+  
+	if ( ( ( PlayerHarry.bBroomBoost == 0 ) &&
+		( GetCurBoostCharge() < GetMaxBoostCharge() ) ) || bBoostExpired )
+	{
+		fChargeDelta = GetMaxBoostCharge() - GetCurBoostCharge();
+		
+		fBoostCharge += (DeltaTime / BoostRechargeTime * fChargeDelta );
+		
+		if ( GetCurBoostCharge() >= GetMaxBoostCharge() )
+		{
+			fBoostCharge = GetMaxBoostCharge();
+			
+			Log(string(self)$": Boost has RECHARGED!");
+			
+			if ( bBoostExpired )
+			{
+				bBoostExpired = False;
+				CarBoostBar.bBoostExpired = False;
+			}
+		}
+	}
+}*/
+
+/*function float GetMaxBoostCharge()
+{
+	return 1.0;
+}
+
+function float GetCurBoostCharge()
+{
+	return fBoostCharge;
+}*/
+
+function SetCameraToFollowGuide()
+{
+  // harry.Cam.SetCameraMode(4);
+  PlayerHarry.Cam.SetCameraMode(CM_Quidditch);
+  PlayerHarry.Cam.SetTargetActor(guide.Name);
+  PlayerHarry.Cam.SetZOffset(25.0);
+  PlayerHarry.Cam.CamTarget.bRelative = True;
+  PlayerHarry.Cam.SetDistance(CameraTrailDist);
+  PlayerHarry.Cam.SetRotTightness(10.0);
+  PlayerHarry.Cam.SetMoveTightness(10.0);
+  PlayerHarry.Cam.SetMoveSpeed(1200.0);
 }
 
 function OnTouchEvent (Pawn Subject, Actor Object)
 {
   if ( Object.Tag == 'FlyingFordSafe' )
   {
-    IncrementSafeCount();
+    //IncrementSafeCount();
   } else //{
     if ( Object.Tag == 'FlyingFordTown' )
     {
-      IncrementTownCount();
+      //IncrementTownCount();
     } else //{
       if ( Object.Tag == 'FlyingFordWind' )
       {
-        // goto JL00D7;
-		//KW left this empty? -AdamJD
+        Log("Entered a windy area");
       }
       if ( Object.Tag == 'FlyingFordWindTrigger' )
       {
@@ -107,21 +207,21 @@ function OnTouchEvent (Pawn Subject, Actor Object)
       } else //{
         if ( Object.Tag == 'FlyingFordLightning' )
         {
-          lightningZone = FlyingFordLightning(Object);
-          GotoState('GameLightning');
+          //lightningZone = FlyingFordLightning(Object);
+          //GotoState('GameLightning');
         }
       //}
     //}
   //}
-  if ( SetCarLocation() )
+  /*if ( SetCarLocation() )
   {
     UpdateHud();
-  }
+  }*/
 }
 
 function OnUnTouchEvent (Pawn Subject, Actor Object)
 {
-  if ( Object.Tag == 'FlyingFordSafe' )
+  /*if ( Object.Tag == 'FlyingFordSafe' )
   {
     DecrementSafeCount();
   } else //{
@@ -142,7 +242,7 @@ function OnUnTouchEvent (Pawn Subject, Actor Object)
   if ( SetCarLocation() )
   {
     UpdateHud();
-  }
+  }*/
 }
 
 function OnHitEvent (Pawn Subject)
@@ -185,7 +285,7 @@ function OnPlayerPossessed()
   Super.OnPlayerPossessed();
   Log("Player possessed");
   Console = baseConsole(PlayerHarry.Player.Console);
-  TriggerEvent('FlyingFordIntro',self,None);
+  //TriggerEvent('FlyingFordIntro',self,None);
 }
 
 function OnPlayerDying()
@@ -288,7 +388,7 @@ function bool SetCarLocation()
 
 function UpdateHud()
 {
-  switch (CarLocation)
+  /*switch (CarLocation)
   {
     // case 1:
 	case LOC_SAFE:
@@ -308,7 +408,152 @@ function UpdateHud()
 	default:
 		Log("We are in an unknown location");
 		break;
+  }*/
+}
+
+function OnPlayerCapture()
+{
+	guide.DestroyControllers();
+	PlayerHarry.bAllowBoost=False;
+	CarBoostBar.Show(False);
+	CarHealthBar.Show(False);
+	MuggleMeter.Show(False);
+	GotoState('GameIntro');
+}
+
+function OnPlayerRelease()
+{
+	PlayerHarry.Cam.SetCameraMode(CM_Quidditch);
+}
+
+function bool CutCommand (string Command, optional string cue, optional bool bFastFlag)
+{
+  local string sActualCommand;
+
+  sActualCommand = ParseDelimitedString(Command," ",1,False);
+  Log("sActualCommand is = "$sActualCommand);
+  
+  if ( sActualCommand ~= "GameIntro" )
+  {
+    //Log("Setting GameIntro");
+	GotoState('GameIntro');
+	CutCue(cue);
+	return True;
   }
+  else if ( sActualCommand ~= "GamePlay" )
+  {
+    Log("Setting GamePlay");
+	GotoState('GamePlay');
+	CutCue(cue);
+	return True;
+  }
+  else if ( sActualCommand ~= "GameWon" )
+  {
+    //Log("Setting GameWon");
+	GotoState('GameWon');
+	CutCue(cue);
+	return True;
+  }
+  else if ( sActualCommand ~= "GameRestart" )
+  {
+    //Log("Setting GameRestart");
+	GotoState('GameRestart');
+	CutCue(cue);
+	return True;
+  }
+  else if ( sActualCommand ~= "GameAirplane" )
+  {
+    GotoState('GameAirplane');
+	CutCue(cue);
+	return True;
+  }
+  else if ( sActualCommand ~= "GameLightning" )
+  {
+    GotoState('GameLightning');
+	CutCue(cue);
+	return True;
+  }
+  else if ( sActualCommand ~= "GoGuide" )
+  {
+    guide.PathName = PlayerHarry.GuidePathName;
+	guide.AirSpeedNormal = PlayerHarry.AirSpeedNormal;
+	guide.SetLocation(PlayerHarry.Location);
+	guide.SetRotation(PlayerHarry.Rotation);
+	guide.GotoState('Fly');
+	CutCue(cue);
+	return True;
+  }
+  else if ( sActualCommand ~= "CamFollowGuide" )
+  {
+    SetCameraToFollowGuide();
+	CutCue(cue);
+	return True;
+  }
+  else if ( sActualCommand ~= "LockOffsetRange" )
+  {
+    Log("LockOffsetRange called");
+	PlayerHarry.LockOffsetRange();
+	CutCue(cue);
+	return True;
+  }
+  else if ( sActualCommand ~= "UnlockOffsetRange" )
+  {
+    Log("UnlockOffsetRange called");
+	PlayerHarry.UnlockOffsetRange();
+	CutCue(cue);
+	return True;
+  }
+  else if ( sActualCommand ~= "PhaseTwo" || sActualCommand ~= "Phase2" )
+  {
+	Log("Car is in Phase Two");
+	bPhaseTwo = True;
+	guide.Destroy();
+	guide = Spawn(Class'FlyingFordPathGuide',,,PlayerHarry.Location,PlayerHarry.Rotation);
+	guide.PathName = PlayerHarry.GuidePathName;
+	guide.AirSpeedNormal = PlayerHarry.AirSpeedNormal;
+	PlayerHarry.guide = guide;
+	CutCue(cue);
+	return True;
+  }
+  else if ( sActualCommand ~= "Set" )
+  {
+    return CutCommand_HandleSet(Command,cue,bFastFlag);
+  }
+  else
+  {
+      return Super.CutCommand(Command,cue,bFastFlag);
+  }
+}
+
+function bool CutCommand_HandleSet (string Command, optional string cue, optional bool bFastFlag)
+{
+	//local Actor A;
+	local string sVarName;
+	local string sVarValue;
+	local int I;
+
+	sVarName = ParseDelimitedString(Command," ",2,False);
+	sVarValue = ParseDelimitedString(Command," ",3,False);
+	sVarName = Caps(sVarName);
+	switch (sVarName)
+	{
+		case "CARPATH":
+			//cm(string(self) $ " Setting CarPath to: " $ sVarValue $ " in: "$string(guide));
+			guide.PathName = name(sVarValue);
+			Log(string(guide)$ " has a new PathName = "$ guide.PathName);
+			PlayerHarry.GuidePathName = name(sVarValue);
+			Log(string(PlayerHarry)$ " has a new GuidePathName = "$ PlayerHarry.GuidePathName);
+			break;
+		default:
+	}
+	
+	if(bFastFlag)
+	{
+		CutNotifyActor.CutCue(cue);
+		return True;
+	}
+	CutCue(cue);
+	return True;
 }
 
 state GameIntro
@@ -319,17 +564,64 @@ state GameIntro
   
   function OnCutSceneEvent (name CutSceneTag)
   {
-    MuggleMeter.BeginDetection();
-    GotoState('GamePlay');
+    //MuggleMeter.BeginDetection();
+    //GotoState('GamePlay');
   }
   
 }
 
 state GamePlay
 {
-begin:
-  PlayerHarry.ClientMessage("We are in GamePlay.");
-  Hedwig.LoopAnim('Drop');
+	event BeginState()
+	{
+	  PlayerHarry.ClientMessage("We are in GamePlay.");
+	  PlayerHarry.StopFlyingOnPath();
+	  PlayerHarry.AirSpeed = 10.0;
+	  PlayerHarry.Deceleration = PlayerHarry.AirSpeedNormal - PlayerHarry.AirSpeed;
+	  PlayerHarry.SetLookForTarget(guide);
+	  SetCameraToFollowGuide();
+	  SetTimer(HudDelaySeconds,False);
+	  /*if ( !bPhaseTwo )
+	  {
+		
+		//CarBoostBar.Show(True);
+		//CarHealthBar.Show(True);
+		//PlayerHarry.bAllowBoost=True;
+		//PlayerHarry.bAllowBrake=True;
+	  }
+	  else
+	  {
+		CarBoostBar.Show(False);
+		CarHealthBar.Show(True);
+		PlayerHarry.bAllowBoost=False;
+		//PlayerHarry.bAllowBrake=False;
+	  }*/
+	  //Hedwig.LoopAnim('Drop');
+	}
+	
+	/*event Tick(float DeltaTime)
+	{
+		Super.Tick(DeltaTime);
+		BoostTick(DeltaTime);
+	}*/
+	
+	event Timer()
+	{
+		if ( !bPhaseTwo )
+		{
+			MuggleMeter.Show(True);
+			CarHealthBar.Show(True);
+			CarBoostBar.Show(True);
+			PlayerHarry.bAllowBoost=True;
+		}
+		else
+		{
+			PlayerHarry.bAllowBoost=False;
+			CarBoostBar.Show(False);
+			CarHealthBar.Show(True);
+			MuggleMeter.Show(True);
+		}
+	}
 }
 
 state GameWon
@@ -588,13 +880,23 @@ defaultproperties
 
     fResetMeter=10.00
 
-    HedwigMaxDistance=400.00
+    //HedwigMaxDistance=400.00
 
-    HedwigPrepivotDistanceFront=200.00
+    //HedwigPrepivotDistanceFront=200.00
 
-    HedwigPrepivotDistanceUp=100.00
+    //HedwigPrepivotDistanceUp=100.00
 
     //Tag=''
 	//fix for KW using '' instead of "" and added the name (to be compatible with the new engine) -AdamJD
-    Tag="Director"
+    //Tag="Director"
+	
+	CameraTrailDist=384.00
+	
+	//GuideTrackDistMax=300.00
+	
+	//BoostExpireTime=3.0
+	
+	//BoostRechargeTime=6.0
+	
+	HudDelaySeconds=3
 }

@@ -124,9 +124,12 @@ auto state ReadyAndWaiting
     default:
     break;
   }
-  if ( baseHUD(PlayerHarry.myHUD).bCutSceneMode == False )
+  //DD39: Added "&& !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet')"
+  //	  and replaced "baseHUD(PlayerHarry.myHUD).bCutSceneMode == False" with "!PlayerHarry.bIsCaptured"
+  if ( !PlayerHarry.bIsCaptured  && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
   {
-    if ( Abs(VSize(Location - PlayerHarry.Location)) < triggerCloudDistance )
+    //DD39: Added "&& PlayerCanSeeMe()"
+	if ( Abs(VSize(Location - PlayerHarry.Location)) < triggerCloudDistance && PlayerCanSeeMe() )
     {
       ShootPoison();
       PlayAnim('Attack');

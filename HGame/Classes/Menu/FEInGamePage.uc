@@ -43,6 +43,10 @@ var HGameButton DuelButton;
 var HGameButton FolioButton;
 var HGameButton MapButton;
 var HGameButton QuidditchButton;
+
+//DD39: adding Stars button
+var HGameButton StarsButton;
+
 var HGameButton QuitButton;
 var HGameButton InputButton;
 var HGameButton CreditsButton;
@@ -283,6 +287,11 @@ function PaintCountText (Canvas Canvas, float fScaleFactor)
 	si.DrawCount(Canvas,FMucusButton.WinLeft * fScaleFactor, FMucusButton.WinTop * fScaleFactor * hScale, fScaleFactor * hScale);
 	si = managerStatus.GetStatusItem(Class'StatusGroupPotionIngr',Class'StatusItemWiggenBark');
 	si.DrawCount(Canvas,WBarkButton.WinLeft * fScaleFactor, WBarkButton.WinTop * fScaleFactor * hScale, fScaleFactor * hScale);
+	
+	//DD39: adding Stars Paint Count Text
+	si = managerStatus.GetStatusItem(Class'StatusGroupStars',Class'StatusItemStars');
+	si.DrawCount(Canvas,StarsButton.WinLeft * fScaleFactor, StarsButton.WinTop * fScaleFactor * hScale, fScaleFactor * hScale);
+	
 	DrawCount(Canvas, fScaleFactor, SecretsButton.WinLeft, SecretsButton.WinTop, strSecretsCount);
 }
 
@@ -347,15 +356,29 @@ function Created()
 	WBarkButton.OverTexture = WBarkButton.UpTexture;
 	WBarkButton.DownTexture = WBarkButton.OverTexture;
 	WBarkButton.DownSound = None;
+	
+	//DD39: creating Stars button 
+	StarsButton = HGameButton(CreateAlignedControl(Class'HGameButton',378.0,16.0,64.0,64.0,,AT_Right));
+	StarsButton.ToolTipString = GetLocalFEString("InGameMenu_0018");
+	//DD39: using the og Menu Challenges icon because it fits better
+	//		StarsButton.UpTexture = Texture(DynamicLoadObject("HP2_Menu.Icons.HP2starcounter",Class'Texture'));
+	StarsButton.UpTexture = Texture(DynamicLoadObject("HP2_Menu.Icons.HP2MenuChallenges",Class'Texture'));
+	StarsButton.OverTexture = StarsButton.UpTexture;
+	StarsButton.DownTexture = StarsButton.OverTexture;
+	StarsButton.DownSound = None;
   
-	BeansButton = HGameButton(CreateAlignedControl(Class'HGameButton',416.0,16.0,64.0,64.0,,AT_Right));
+	//DD39: original pos 416 instead of 462
+	//BeansButton = HGameButton(CreateAlignedControl(Class'HGameButton',416.0,16.0,64.0,64.0,,AT_Right));
+	BeansButton = HGameButton(CreateAlignedControl(Class'HGameButton',462.0,16.0,64.0,64.0,,AT_Right));
 	BeansButton.ToolTipString = GetLocalFEString("InGameMenu_0013");
 	BeansButton.UpTexture = Texture(DynamicLoadObject("HP2_Menu.Icons.HP2MenuJellyBeans",Class'Texture'));
 	BeansButton.OverTexture = BeansButton.UpTexture;
 	BeansButton.DownTexture = BeansButton.OverTexture;
 	BeansButton.DownSound = None;
 	
-	SecretsButton = HGameButton(CreateAlignedControl(Class'HGameButton',532.0,16.0,64.0,64.0,,AT_Right));
+	//DD39: original pos 532 instead of 546
+	//SecretsButton = HGameButton(CreateAlignedControl(Class'HGameButton',532.0,16.0,64.0,64.0,,AT_Right));
+	SecretsButton = HGameButton(CreateAlignedControl(Class'HGameButton',546.0,16.0,64.0,64.0,,AT_Right));
 	SecretsButton.ToolTipString = GetLocalFEString("Report_Card_0006");
 	SecretsButton.UpTexture = Texture(DynamicLoadObject("HP2_Menu.Icons.HP2MenuSecrets",Class'Texture'));
 	SecretsButton.OverTexture = SecretsButton.UpTexture;
@@ -371,7 +394,9 @@ function Created()
 	
 	ChallengesButton = HGameButton(CreateAlignedControl(Class'HGameButton',146.0,114.0,64.0,64.0,,AT_Center));
 	ChallengesButton.ToolTipString = GetLocalFEString("InGameMenu_0044");
-	ChallengesButton.UpTexture = Texture(DynamicLoadObject("HP2_Menu.Icons.HP2MenuChallenges",Class'Texture'));
+	//DD39: changing the Menu Challenges icon with a custom one
+	//ChallengesButton.UpTexture = Texture(DynamicLoadObject("HP2_Menu.Icons.HP2MenuChallenges",Class'Texture'));
+	ChallengesButton.UpTexture = Texture(DynamicLoadObject("Extended_Textures.Icons.HP2MenuChallenges",Class'Texture'));
 	ChallengesButton.OverTexture = ChallengesButton.UpTexture;
 	ChallengesButton.DownTexture = ChallengesButton.OverTexture;
 	ChallengesButton.DownSound = soundMiddleClick;
@@ -425,7 +450,9 @@ function Created()
 	SoundVideoButton.DownTexture = SoundVideoButton.OverTexture;
 	SoundVideoButton.DownSound = soundBottomClick;
   
-	textureChallengesRO = Texture(DynamicLoadObject("HP2_Menu.HP2ChallengesBarWet",Class'WetTexture'));
+	//DD39: changin the Menu Challenges wet icon with a custom one
+	//textureChallengesRO = Texture(DynamicLoadObject("HP2_Menu.HP2ChallengesBarWet",Class'WetTexture'));
+	textureChallengesRO = Texture(DynamicLoadObject("Extended_Textures.Icons.HP2MenuChallengesWet",Class'WetTexture'));
 	textureMapRO = Texture(DynamicLoadObject("HP2_Menu.Icons.HP2MapsWet",Class'WetTexture'));
 	textureDuelRO = Texture(DynamicLoadObject("HP2_Menu.Icons.HP2MenuWizardDuelWet",Class'WetTexture'));
 	textureQuidRO = Texture(DynamicLoadObject("HP2_Menu.Icons.HP2MenuQuidditchWet",Class'WetTexture'));

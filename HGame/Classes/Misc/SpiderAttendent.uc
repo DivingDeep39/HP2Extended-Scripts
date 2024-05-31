@@ -235,7 +235,8 @@ state AttackHarry
   {	
 	Global.Tick(DeltaTime);
 
-	if ( ReadyPosition() == True && (BaseHud(PlayerHarry.myHud).bCutSceneMode == False)  )
+	// DD39: Replaced "(BaseHud(PlayerHarry.myHud).bCutSceneMode == False)" with "!PlayerHarry.bIsCaptured"
+	if ( ReadyPosition() == True && !PlayerHarry.bIsCaptured )
 	{
 		GotoState('stateBiteHarry');
 	}
@@ -281,7 +282,8 @@ state stateBeMenacing
   {	
 	Global.Tick(DeltaTime);
 
-	if ( ReadyPosition() == True  && (BaseHud(Playerharry.myHud).bCutSceneMode == False)  )
+	// DD39: Replaced "(BaseHud(PlayerHarry.myHud).bCutSceneMode == False)" with "!PlayerHarry.bIsCaptured"
+	if ( ReadyPosition() == True && !PlayerHarry.bIsCaptured )
 	{
 		GotoState('stateBiteHarry');
 	}
@@ -397,6 +399,8 @@ state OutForTheCount
 begin:
   // eVulnerableToSpell = 0;
   eVulnerableToSpell = SPELL_None;
+  //DD39: disable collision
+  SetCollision(False,False,False);
   TriggerEvent('OutForTheCount',self,None);
   Velocity = vect(0.00,0.00,0.00);
   Acceleration = vect(0.00,0.00,0.00);
@@ -405,7 +409,8 @@ begin:
   PlaySound(Sound'SPI_large_LandOnBack',SLOT_None,RandRange(0.89999998,1.0),,200000.0,RandRange(0.80,1.20),,False);
   Sleep(0.5);
   LoopAnim('idleOnBack');
-  SetCollisionSize(PlayerHarry.CollisionRadius,Default.CollisionHeight);
+  //DD39: removed 
+  //SetCollisionSize(PlayerHarry.CollisionRadius,Default.CollisionHeight);
   Sleep(0.2);
   fxDestroy1ParticleEffect = Spawn(Class'WebFx',,,Location);
   fxDestroy2ParticleEffect = Spawn(Class'WebDust',,,Location);

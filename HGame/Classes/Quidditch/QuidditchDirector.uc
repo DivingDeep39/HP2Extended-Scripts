@@ -162,6 +162,9 @@ var name DelayedEventName;
 var name DelayedEventNextState;
 var string DelayedEventCue;
 
+//CUSTOM:	For the mandatory match -AdamJD
+var(Director) bool bMandatoryMatch;
+
 
 function PreBeginPlay()
 {
@@ -252,30 +255,40 @@ function OnPlayerTravelPostAccept()
     // goto JL0034;
   }
   bFinalMatch = harry.curQuidMatchNum >= 5;
-  MatchOpponent = harry.quidGameResults[harry.curQuidMatchNum].Opponent;
-  if ( MatchOpponent ~= "Gryffindor" )
+  
+  //CUSTOM:	If the mandatory match then set opponent to Slytherin -AdamJD
+  if(bMandatoryMatch)
   {
-    // Opponent = 0;
-	Opponent = HA_Gryffindor;
-  } else //{
-    if ( MatchOpponent ~= "Ravenclaw" )
-    {
-      // Opponent = 1;
-	  Opponent = HA_Ravenclaw;
-    } else //{
-      if ( MatchOpponent ~= "Hufflepuff" )
-      {
-        // Opponent = 2;
-		Opponent = HA_Hufflepuff;
-      } else //{
-        if ( MatchOpponent ~= "Slytherin" )
-        {
-          // Opponent = 3;
-		  Opponent = HA_Slytherin;
-        }
-      //}
-    //}
-  //}
+	Opponent = HA_Slytherin;
+  }
+  //CUSTOM:	Added an else statement to do the stock setting opponent code if not the mandatory match -AdamJD
+  else
+  {
+	  MatchOpponent = harry.quidGameResults[harry.curQuidMatchNum].Opponent;
+	  if ( MatchOpponent ~= "Gryffindor" )
+	  {
+		// Opponent = 0;
+		Opponent = HA_Gryffindor;
+	  } else //{
+		if ( MatchOpponent ~= "Ravenclaw" )
+		{
+		  // Opponent = 1;
+		  Opponent = HA_Ravenclaw;
+		} else //{
+		  if ( MatchOpponent ~= "Hufflepuff" )
+		  {
+			// Opponent = 2;
+			Opponent = HA_Hufflepuff;
+		  } else //{
+			if ( MatchOpponent ~= "Slytherin" )
+			{
+			  // Opponent = 3;
+			  Opponent = HA_Slytherin;
+			}
+		  //}
+		//}
+	  //}
+  }
   bFirstTimeThisMatch = (harry.quidGameResults[harry.curQuidMatchNum].myScore == 0) && (harry.quidGameResults[harry.curQuidMatchNum].OpponentScore == 0);
   PlayerHarry.ClientMessage(string(Name) $ ": Start match: " $ string(harry.curQuidMatchNum) $ ", '" $ MatchOpponent $ "'");
   Log(string(Name) $ ": Start match: " $ string(harry.curQuidMatchNum) $ ", '" $ MatchOpponent $ "'");
@@ -619,10 +632,15 @@ function StartGame()
   {
     TauntMgr.StartTaunts();
   }
-  if ( bFinalMatch )
+  if ( bFinalMatch || bMandatoryMatch )  //CUSTOM:	Also set up timer to go into the trench if this is the mandatory match -AdamJD
   {
-    Log("Starting final match at " $ string(Level.TimeSeconds));
     SetTimer(fTimeBeforeGoingIntoTrench,False);
+	
+	//CUSTOM:	Only log this if bFinalMatch is true -AdamJD
+	if(bFinalMatch)
+	{
+		Log("Starting final match at " $ string(Level.TimeSeconds));
+	}
   }
   GotoState('GamePlay');
 }
@@ -686,10 +704,10 @@ function ComputeScore()
   if ( bGryffWon )
   {
     GryffScore += 150;
-    ScoreBoard.SetGryffindorScore(GryffScore);
+	ScoreBoard.SetGryffindorScore(GryffScore);
   } else {
     OpponentScore += 150;
-    if (  !bHarryDied )
+    if (  !bHarryDied  )
     {
       ScoreBoard.SetOpponentScore(OpponentScore);
     }
@@ -1504,7 +1522,7 @@ state GamePlay
   {
     PlayerHarry.ClientMessage(string(Name) $ " Exited " $ string(GetStateName()) $ " State");
     Log(string(Name) $ " Exited " $ string(GetStateName()) $ " State");
-    if ( bFinalMatch )
+    if ( bFinalMatch || bMandatoryMatch ) //CUSTOM:	Also do this for the mandatory match -AdamJD
     {
       SetTimer(0.0,False);
     }
@@ -1570,7 +1588,7 @@ state GameCatch
     Super.OnActionKeyPressed();
     if ( True )
     {
-      if ( bFinalMatch )
+      if ( bFinalMatch || bMandatoryMatch ) //CUSTOM:	Also do this for the mandatory match -AdamJD
       {
         harry.CatchTarget(Snitch);
       } else {
@@ -1617,7 +1635,7 @@ state GameWon
     Log("Harry's Health: " $ string(harry.GetHealthCount()));
     HarryHealth.SetCount(OriginalHealth);
     Log("Harry's Health Restored: " $ string(harry.GetHealthCount()));
-    if ( bFinalMatch )
+    if ( bFinalMatch || bMandatoryMatch ) //CUSTOM:	Also do this for the mandatory match -AdamJD
     {
       PlayerHarry.ClientMessage(string(Name) $ " triggering event '" $ string(MatchEvents_Final.Won) $ "'");
       Log(string(Name) $ " triggering event '" $ string(MatchEvents_Final.Won) $ "'");
@@ -1634,73 +1652,105 @@ begin:
   ComputeScore();
   SetTimer(FMax(3.0,Commentator.TimeLeftUntilSafeToSayAComment(True)),False);
   Sleep(1.0);
-  if (  !bFinalMatch )
+  if (  !bFinalMatch  ) 
   {
-    if ( Commentator != None )
-    {
-      Commentator.PlaySound(Sound'Q_whistle_long',SLOT_Interact,1.0,,20000.0);
-    }
-    if ( bHasCrowds )
-    {
-      // CheerCrowd = 0;
-	  CheerCrowd = TA_Gryffindor;
-      if ( Crowds[CheerCrowd] != None )
-      {
-        Crowds[CheerCrowd].Cheer(CT_CheerLong);
-      }
-      // CheerCrowd = 2;
-	  CheerCrowd = TA_Neutral;
-      if ( Crowds[CheerCrowd] != None )
-      {
-        Crowds[CheerCrowd].Cheer(CT_CheerLong);
-      }
-      // CheerCrowd = 1;
-	  CheerCrowd = TA_Opponent;
-      if ( Crowds[CheerCrowd] != None )
-      {
-        Crowds[CheerCrowd].Cheer(CT_BooLong);
-      }
-    }
-    Sleep(0.25);
-    TriggerEvent('Silence',self,None);
-    TriggerEvent('Fanfare_Win',self,None);
-    fWhenToPlayPostMusic = Level.TimeSeconds + GetSoundDuration(Sound'sm_dia_DiagonFail_01');
+	//CUSTOM:	Don't do this for the mandatory match -AdamJD
+	if(!bMandatoryMatch)
+	{
+		if ( Commentator != None )
+		{
+		  Commentator.PlaySound(Sound'Q_whistle_long',SLOT_Interact,1.0,,20000.0);
+		}
+		if ( bHasCrowds )
+		{
+		  // CheerCrowd = 0;
+		  CheerCrowd = TA_Gryffindor;
+		  if ( Crowds[CheerCrowd] != None )
+		  {
+			Crowds[CheerCrowd].Cheer(CT_CheerLong);
+		  }
+		  // CheerCrowd = 2;
+		  CheerCrowd = TA_Neutral;
+		  if ( Crowds[CheerCrowd] != None )
+		  {
+			Crowds[CheerCrowd].Cheer(CT_CheerLong);
+		  }
+		  // CheerCrowd = 1;
+		  CheerCrowd = TA_Opponent;
+		  if ( Crowds[CheerCrowd] != None )
+		  {
+			Crowds[CheerCrowd].Cheer(CT_BooLong);
+		  }
+		}
+		Sleep(0.25);
+		TriggerEvent('Silence',self,None);
+		TriggerEvent('Fanfare_Win',self,None);
+		fWhenToPlayPostMusic = Level.TimeSeconds + GetSoundDuration(Sound'sm_dia_DiagonFail_01');
+	}
   }
-  HousePoints.IncrementCount( -harry.quidGameResults[harry.curQuidMatchNum].HousePoints);
-  harry.quidGameResults[harry.curQuidMatchNum].myScore = GryffScore;
-  harry.quidGameResults[harry.curQuidMatchNum].OpponentScore = OpponentScore;
-  harry.quidGameResults[harry.curQuidMatchNum].HousePoints = Max(GryffScore - OpponentScore,0);
-  harry.quidGameResults[harry.curQuidMatchNum].bWon = True;
-  HousePoints.IncrementCount(harry.quidGameResults[harry.curQuidMatchNum].HousePoints);
-  if ( (Commentator != None) &&  !bFinalMatch )
+  
+  //CUSTOM:	Don't set the scores or quidditch points if this is the mandatory match  -AdamJD
+  if(bMandatoryMatch)
   {
-    Sleep(Commentator.TimeLeftUntilSafeToSayAComment(True));
-    Commentator.SayComment(QC_Positive,,True);
-    Sleep(Commentator.TimeLeftUntilSafeToSayAComment(True));
-    Commentator.SayComment(QC_CaughtSnitch,,True);
+	  //CUSTOM:	Only add house points if the difference is more than 0  -AdamJD
+	  if((GryffScore - OpponentScore) > 0)
+	  {
+		HousePoints.IncrementCount(GryffScore - OpponentScore);
+	  }
   }
-  if (  !bFinalMatch )
+ 
+  //CUSTOM:	Added an else statement to do the stock scores and house points code if not the mandatory match -AdamJD
+  else
   {
-    if ( Level.TimeSeconds < fWhenToPlayPostMusic )
-    {
-      Sleep(fWhenToPlayPostMusic - Level.TimeSeconds);
-    }
-    TriggerEvent('PostFanfare_Win',self,None);
+	  HousePoints.IncrementCount( -harry.quidGameResults[harry.curQuidMatchNum].HousePoints);
+	  harry.quidGameResults[harry.curQuidMatchNum].myScore = GryffScore;
+	  harry.quidGameResults[harry.curQuidMatchNum].OpponentScore = OpponentScore;
+	  harry.quidGameResults[harry.curQuidMatchNum].HousePoints = Max(GryffScore - OpponentScore,0);
+	  harry.quidGameResults[harry.curQuidMatchNum].bWon = True;
+	  HousePoints.IncrementCount(harry.quidGameResults[harry.curQuidMatchNum].HousePoints);
   }
-  if ( (Commentator != None) &&  !bFinalMatch )
+  
+  if ( (Commentator != None) &&  !bFinalMatch  ) 
   {
-    Sleep(Commentator.TimeLeftUntilSafeToSayAComment(True));
-    if ( bWonCup )
-    {
-      Commentator.SayComment(QC_WinsCup,TA_Gryffindor,True);
-      Sleep(Commentator.TimeLeftUntilSafeToSayAComment(True));
-      Commentator.SayComment(QC_Positive,,True);
-    } else {
-      Commentator.SayComment(QC_WinsMatch,TA_Gryffindor,True);
-    }
-    Sleep(Commentator.TimeLeftUntilSafeToSayAComment());
-    Commentator.SayComment(QC_SigningOff);
-    Sleep(Commentator.TimeLeftUntilSafeToSayAComment(True));
+	//CUSTOM:	Don't do this for the mandatory match -AdamJD
+	if(!bMandatoryMatch)
+	{
+		Sleep(Commentator.TimeLeftUntilSafeToSayAComment(True));
+		Commentator.SayComment(QC_Positive,,True);
+		Sleep(Commentator.TimeLeftUntilSafeToSayAComment(True));
+		Commentator.SayComment(QC_CaughtSnitch,,True);
+	}
+  }
+  if (  !bFinalMatch ) 
+  {
+	//CUSTOM:	Don't do this for the mandatory match -AdamJD
+	if(!bMandatoryMatch)
+	{
+		if ( Level.TimeSeconds < fWhenToPlayPostMusic )
+		{
+		  Sleep(fWhenToPlayPostMusic - Level.TimeSeconds);
+		}
+		TriggerEvent('PostFanfare_Win',self,None);
+	}
+  }
+  if ( (Commentator != None) &&  !bFinalMatch ) 
+  {
+	//CUSTOM:	Don't do this for the mandatory match -AdamJD
+	if(!bMandatoryMatch)
+	{
+		Sleep(Commentator.TimeLeftUntilSafeToSayAComment(True));
+		if ( bWonCup )
+		{
+		  Commentator.SayComment(QC_WinsCup,TA_Gryffindor,True);
+		  Sleep(Commentator.TimeLeftUntilSafeToSayAComment(True));
+		  Commentator.SayComment(QC_Positive,,True);
+		} else {
+		  Commentator.SayComment(QC_WinsMatch,TA_Gryffindor,True);
+		}
+		Sleep(Commentator.TimeLeftUntilSafeToSayAComment());
+		Commentator.SayComment(QC_SigningOff);
+		Sleep(Commentator.TimeLeftUntilSafeToSayAComment(True));
+	}
   } else {
     Sleep(0.2);
   }
@@ -1712,7 +1762,7 @@ begin:
     // goto JL03CC;
   }
   CutCue(EndCue);
-  if ( bFinalMatch )
+  if ( bFinalMatch  || bMandatoryMatch ) //CUSTOM:	Also do this for the mandatory match -AdamJD
   {
     PlayerHarry.ClientMessage(string(Name) $ " triggering event '" $ string(MatchEvents_Final.End) $ "'");
     Log(string(Name) $ " triggering event '" $ string(MatchEvents_Final.End) $ "'");
@@ -1851,11 +1901,15 @@ begin:
     TriggerEvent('FanFare_Lose',self,None);
     fWhenToPlayPostMusic = Level.TimeSeconds + GetSoundDuration(Sound'sm_dia_DiagonFail_01');
   }
-  HousePoints.IncrementCount( -harry.quidGameResults[harry.curQuidMatchNum].HousePoints);
-  harry.quidGameResults[harry.curQuidMatchNum].myScore = GryffScore;
-  harry.quidGameResults[harry.curQuidMatchNum].OpponentScore = OpponentScore;
-  harry.quidGameResults[harry.curQuidMatchNum].HousePoints = Max(GryffScore - OpponentScore,0);
-  harry.quidGameResults[harry.curQuidMatchNum].bWon = False;
+  //CUSTOM:	Don't set the scores or house points if this is the mandatory match and Harry lost -AdamJD
+  if(!bMandatoryMatch)
+  {
+	  HousePoints.IncrementCount( -harry.quidGameResults[harry.curQuidMatchNum].HousePoints);
+	  harry.quidGameResults[harry.curQuidMatchNum].myScore = GryffScore;
+	  harry.quidGameResults[harry.curQuidMatchNum].OpponentScore = OpponentScore;
+	  harry.quidGameResults[harry.curQuidMatchNum].HousePoints = Max(GryffScore - OpponentScore,0);
+	  harry.quidGameResults[harry.curQuidMatchNum].bWon = False;
+  }
   if ( Commentator != None )
   {
     Sleep(Commentator.TimeLeftUntilSafeToSayAComment(True));

@@ -391,7 +391,9 @@ function PawnHearHarryNoise()
 
 function HideBasil()
 {
-  PlayAnim('birth',0.0);
+  //DD39: Replaced 'birth' with 'OutHole'.
+  //PlayAnim('birth',0.0);
+  PlayAnim('OutHole',0.0);
   SetLocation(Location + vect(0.00,0.00,-1000.00));
   bHidden = True;
   _BasilSmoke.bEmit = False;
@@ -757,7 +759,8 @@ state stateComeOutAndSniff1
   
   function BeginState()
   {
-    bHidden = False;
+    //DD39: Moved to begin.
+	//bHidden = False;
     bHaveHeardHarry = False;
     bAttackAfterBeingHit = True;
   }
@@ -770,7 +773,14 @@ state stateComeOutAndSniff1
     PlayerHarry.ShakeView(0.75,50.0,50.0);
   }
   PlayAnim('OutHole',0.8);
+  //DD39: Added Sleeps, moved !bHidden here and moved up PlaySound
+  //      to fix the Bas being visible out of the hole for a time fraction
+  //      and the inaudible roar sound if the grate was previously opened
+  Sleep(0.00001);
   _BasiliskHeadColObj.PlaySound(Sound'BAS_OutHole',Slot_None,BasilSoundVolume,False,BasilSoundRadius,RandRange(0.8,1.0));
+  Sleep(0.09999);
+  bHidden = False;
+  //_BasiliskHeadColObj.PlaySound(Sound'BAS_OutHole',Slot_None,BasilSoundVolume,False,BasilSoundRadius,RandRange(0.8,1.0));
   FinishAnim();
   GotoState('ComeOutAndSniff1a');
 }
@@ -852,7 +862,8 @@ begin:
 function DoAttack2()
 {
   bListenToHarry = False;
-  if ( (PlayerHarry.Difficulty > DifficultyEasy) && (VSize2D(PlayerHarry.Location - Location) < HeadAttackFarthest_2 + 20) )
+  // DD39: Always bite Harry if he gets too close.
+  if ( /*(PlayerHarry.Difficulty > DifficultyEasy) &&*/ (VSize2D(PlayerHarry.Location - Location) < HeadAttackFarthest_2 + 20) )
   {
     GotoState('stateAttack_2_');
   } else {
@@ -993,11 +1004,16 @@ function PlayLungeAnim_2_()
 {
   local int I;
   local int W;
+  // DD39: New local var.
+  local float fHeadAttackRate;
 
   W = (HeadAttackFarthest_2 - HeadAttackNearest_2) / (HeadAttackCount_2 - 1); //UTPT didn't add the divide bit... -AdamJD
   I = ( VSize2D(playerHarry.Location - Location) - HeadAttackNearest_2 + w/2 + w/4) / w;  //UTPT didn't add this... -AdamJD
   I = Clamp( I, 0, HeadAttackCount_2 - 1 ); //UTPT didn't add this... -AdamJD
-  PlayAnim(name("snap" $ string(I + 1)),HeadAttackAnimRate,0.2);
+  // DD39: Calculate the attack animation rate based on distance.
+  //PlayAnim(name("snap" $ string(I + 1)),HeadAttackAnimRate,0.2);
+  fHeadAttackRate = 1.5 - (0.08 * I);
+  PlayAnim(name("snap" $ string(I + 1)),fHeadAttackRate,1.0);
 }
 
 state stateAcidSpit
@@ -1074,14 +1090,15 @@ function CastSpitSpell (bool bAimAtHarry, optional bool bUseHeadYaw)
 	V = _BasiliskHeadColObj.Location + vector(R) * Dist2D;
     V.Z = FloorZ;
     fTimeToHit = 1.29999995;
-    if ( PlayerHarry.Difficulty == DifficultyMedium )
+	// DD39: Removed because it's ridiculous.
+    /*if ( PlayerHarry.Difficulty == DifficultyMedium )
     {
       fTimeToHit = 0.50;
     } else //{
       if ( PlayerHarry.Difficulty == DifficultyHard )
       {
         fTimeToHit = 0.18;
-      }
+      }*/
     //}
     V = ComputeTrajectoryByTime(_BasiliskHeadColObj.Location,PlayerHarry.Location,fTimeToHit,-200.0);
     R = rotator(V);
@@ -2109,16 +2126,23 @@ function BasilHitBySpell (baseSpell spell, Vector HitLocation)
   DamageAmount *= GetBasilDamageScalar();
   if ( bDidFirstBattle )
   {
-    DamageAmount *= 0.5;
+	DamageAmount *= 0.5;
+	
+	// DD39: Reduce damage by 25% if doing the special lunge attack.
+	if ( IsInState('stateAttack_2_') )
+	{
+		DamageAmount *= 0.75;
+	}
   }
-  if ( PlayerHarry.Difficulty == DifficultyMedium )
+  // DD39: Removed because it doesn't make sense.
+  /*if ( PlayerHarry.Difficulty == DifficultyMedium )
   {
     DamageAmount *= 0.75;
   } else //{
     if ( PlayerHarry.Difficulty == DifficultyHard )
     {
       DamageAmount *= 0.5;
-    }
+    }*/
   //}
   Health -= DamageAmount;
   if ( Health <= 0 )
@@ -2201,11 +2225,15 @@ function BeatBoss()
   foreach AllActors(Class'SnakeVenomPool',pool)
   {
     pool.iDamage = 0;
+	//DD39: Destroy all acid pools.
+	pool.Destroy();
   }
   foreach AllActors(Class'spellAcidSpit',spit)
   {
     spit.bSpawnPool = False;
     spit.iDamage = 0;
+	//DD39: Destroy all acid spits.
+	spit.Destroy();
   }
   PlayerHarry.SpellCursor.bSpellCursorAlwaysOn = False;
   PlayerHarry.SpellCursor.EnableEmission(False);

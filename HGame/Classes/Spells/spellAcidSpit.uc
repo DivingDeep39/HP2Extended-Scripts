@@ -123,4 +123,10 @@ defaultproperties
     CollisionHeight=10.00
 
     bBounce=True
+	
+	//DD39: hue change
+	LightHue=197
+	
+	//DD39: radius change
+	LightRadius=3
 }

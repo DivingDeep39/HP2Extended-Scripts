@@ -30,7 +30,8 @@ defaultproperties
 
     bPersistent=True
 
-    Mesh=SkeletalMesh'HProps.skBroomQudditchMesh'
+    //DD39: new mesh and texture
+	Mesh=SkeletalMesh'Extended_Meshes.skNimbus2001Mesh'
 
     CollisionRadius=45.00
 
@@ -44,4 +45,7 @@ defaultproperties
     bBlockPlayers=False
 
     bBlockCamera=False
+	
+	//DD39: now it spins
+	bRotateToDesired=False
 }

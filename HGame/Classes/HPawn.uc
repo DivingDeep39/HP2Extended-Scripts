@@ -443,6 +443,12 @@ state() patrol
         PatrolPointLinkTag = PatrolPoint(navP).PatrolPointLinkTag;
         LastNavP = navP;
         SavedFirstNavP = navP;
+		
+		//DD39: prevents persistent HPawns from restarting their path upon level reload.
+		if ( !bLoopPath && bPersistent )
+		{
+			firstPatrolPointObjectName = '';
+		}
       }
     } else {
       if ( DestinationObjectName != 'None' )
@@ -562,7 +568,10 @@ moveLoop:
       {
         navP = FindClosestPatrolPoint(LastNavP,navP);
       } else {
-        navP = None;
+        //DD39: actor stops sliding when reaching the last PP
+		Velocity = vect(0.00,0.00,0.00);
+		Acceleration = vect(0.00,0.00,0.00);
+		navP = None;
       }
     } else {
       navP = PatrolPoint(navP).NextPatrolPoint;
@@ -1995,6 +2004,147 @@ function PlayerCutRelease()
 function SetDespawnFlag()
 {
   bDespawned = True;
+}
+
+// DD39: Omega: Pulled from parent to fix some bugs:
+function bool CutCommand_TurnTo(string command, optional string cue, optional bool bFastFlag)
+{
+	local string  sString;
+	local bool    bDoSnap;
+	local bool    bDoFollow;
+	local bool    bDoFollowPermanent;
+	local rotator TempRotator;
+	local string  sActualCommand;
+	local string  sCutName;
+	local actor   a;
+	local int     i;
+	local bool    bSendQWhenDone;
+
+	//playerHarry.ClientMessage(self $ " Got a Command:"$command);
+	sActualCommand = ParseDelimitedString( command, " ", 1, false );
+
+	if( sActualCommand ~= "Face" )
+		bDoSnap = true; //do a snap
+
+	sCutName = ParseDelimitedString( command, " ", 2, false );
+
+	ForEach AllActors( class'actor', a )
+		if( a.CutName ~= sCutName )
+			break;
+
+	if( a == none )
+	{
+		CutErrorString = "No Actor with CutName '" $ sCutName $ "'";
+		CutNotifyActor.CutCue( cue );
+		return false;
+	}
+
+	// DD39: Omega: Check first and not after bFastFlag is taken care of
+	//for( i = 3; i < 20; i++ )
+	while(true)
+	{
+		sString = ParseDelimitedString( command, " ", i, false );
+
+		// Omega: Breakout condition
+		if( sString == "" )
+			break;
+
+		if( sString ~= "Follow" )
+		{
+			bDoFollow = true;
+		}
+		if( sString ~= "FollowPermanent" )
+		{
+			bDoFollow = true;
+			bDoFollowPermanent = true;
+		}
+		else
+		if( Left(sString, 5) ~= "rate=" )
+		{
+			RotationRate.yaw = float( Mid(sString, 5) )/360 * 65536;
+		}
+
+		i++;
+	}
+
+	// DD39: Omega: Check for following
+	if( bFastFlag && !bDoFollow )
+	{
+		TempRotator = Rotation;
+		TempRotator.Yaw = rotator(a.Location - Location).Yaw;
+		TempRotator.Pitch = 0;
+		SetRotation( TempRotator ); //just do it now.
+		DesiredRotation = TempRotator;
+		CutNotifyActor.CutCue( cue );
+		return true;
+	}
+
+	//If we are doing a turnto with NO snap, and NO follow, we'll want to call the cue later, otherwise we'll call it now.
+	if( !bDoSnap  &&  !bDoFollow )
+		bSendQWhenDone = true;
+
+	//If we're supposed to follow, or we DONT snap, use the turn to state, otherwise do it now.
+	if( bDoFollow  ||  !bDoSnap)
+	{
+		DoTurnTo( a, bDoSnap, bDoFollow, bDoFollowPermanent, bSendQWhenDone );
+	}
+	else
+	{
+		TempRotator = Rotation;
+		TempRotator.Yaw = rotator(a.Location - Location).Yaw;
+		SetRotation( TempRotator ); //just do it now.
+		DesiredRotation = TempRotator;
+	}
+
+	if( bSendQWhenDone )
+		sCutNotifyCue = cue;
+	else
+		CutNotifyActor.CutCue( cue );
+
+	return true;
+}
+
+// DD39: Omega: Fix some base bugs here:
+state stateTurningTo
+{
+	function CutBypass()
+	{
+		local  rotator r;
+
+		r = rotator(TurnTo_TargetActor.location - location);
+		r.pitch = 0;
+		SetRotation( r );
+
+		// DD39: Omega: If we are supposed to follow an actor, DON'T bypass this
+		if( bTurnTo_FollowActor )
+		{
+			return;
+		}
+
+		if( bSendQWhenDone )
+			DoCutCueNotify();
+		OnEvent( 'ActionDone' );
+	}
+
+  Begin:
+	//LoopAnim( MoveToAnimSequence, 1.0, 0.2 );
+	MoveTarget = none;
+	//if( Physics == PHYS_Flying )
+	//{
+	//	Velocity = vect(0,0,0);
+	//	Acceleration = vect(0,0,0);
+	//}
+	TurnToward( TurnTo_TargetActor );
+	//DesiredRotation.Yaw = Rotation.Yaw;
+	if( bTurnTo_FollowActor )
+		Goto 'Begin';
+
+	if( bSendQWhenDone )
+		DoCutCueNotify();
+	
+	OnEvent( 'ActionDone' );
+
+	//LoopAnim( IdleAnimName, 1.0, 0.2 );
 }
 
 defaultproperties

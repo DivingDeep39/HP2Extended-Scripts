@@ -11,8 +11,18 @@ var() Vector ObjectStartPoint[8];
 var() Vector ObjectStartVelocity[8];
 var() bool bRandomBeans;
 var() bool bMakeSpawnPersistent;
+//DD39: adding a string to set the global key
+var() string GlobalChestKey;
 var bool bOpened;
+
 var int iBean;
+
+//DD39: added PostBeginPlay to check for the global key to get
+event PostBeginPlay()
+{
+	Super.PostBeginPlay();
+	CheckGlobalChestKey();
+}
 
 function int GetMaxEjectedObjects()
 {
@@ -92,12 +102,32 @@ auto state waitforspell
   }
 }
 
+//DD39: added function to set the global key
+function SetGlobalChestKey()
+{
+	if (GlobalChestKey != "")
+		{
+			SetGlobalBool(GlobalChestKey,true);
+		}
+}
+
+//DD39: added function to get the global key
+function CheckGlobalChestKey()
+{
+	if (GetGlobalBool(GlobalChestKey))
+	{
+		bOpened = True;
+	}	
+}
+
 state turnover
 {
   function BeginState()
   {
     bOpened = True;
     Level.PlayerHarryActor.ClientMessage(" Chest " $ string(self) $ " is opening so bOpened = " $ string(bOpened));
+	//DD39: added function to set the global key
+	SetGlobalChestKey();
   }
   
   function generateobject()

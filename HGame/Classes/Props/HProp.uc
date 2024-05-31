@@ -34,6 +34,7 @@ var bool bBounceIntoPlaceTiming;
 var float fBounceIntoPlaceTimeout;
 var bool bBounceIntoPlace;
 var Sound soundBounce;
+var bool bNoFlyToHud;	// DD39: New custom bool
 
 function PreBeginPlay()
 {
@@ -233,6 +234,12 @@ ignores Touch;
   event BeginState()
   {
     bReadyForFlyEffect = False;
+	
+	// DD39: Check if HUD is invisible
+	if ( HPHud(PlayerHarry.myHUD).bHideStatus )
+	{
+	  bNoFlyToHud = True;
+	}
   }
   
  begin:
@@ -257,7 +264,7 @@ ignores Touch;
     //}
   //}
   SetFlyProps();
-  if ( PickupFlyTo == FT_HudPosition )
+  if ( PickupFlyTo == FT_HudPosition && !bNoFlyToHud )	// DD39: Don't fly if there's no HUD
   {
     fCurrFlyTime = fTotalFlyTime;
     vectHudLocation = PlayerHarry.managerStatus.GetHudLocation(self);

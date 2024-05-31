@@ -31,6 +31,12 @@ var() float timeWarningWhileCarried;
 var() bool bWaitForTrigger;
 var float timeIdleFidgit;
 var bool bFidgit;
+// DD39: 2 new vars for GroupName:
+var() Imp myFriends[3];
+var int numFriends;
+// DD39: Handles the HitWall timer in stateRunAway:
+var bool bTimerSet;
+
 
 event KilledBy (Pawn EventInstigator)
 {
@@ -54,6 +60,22 @@ function PostBeginPlay()
   Super.PostBeginPlay();
   vHome = Location;
   attackDistance = PlayerHarry.CollisionRadius + CollisionRadius + 5;
+  // DD39 (start): Look for Imps with matching GroupName:
+  if ( GroupName != 'None' )
+  {
+    foreach AllActors(Class'Imp',tempImp)
+    {
+      if ( tempImp != self )
+      {
+        if ( tempImp.GroupName == GroupName )
+        {
+          myFriends[numFriends] = tempImp;
+          numFriends++;
+        }
+      }
+    }
+  }
+  // DD39 (end).
 }
 
 function SetDifficulty()
@@ -106,17 +128,34 @@ function SetDifficulty()
 
 function PlayerCutCapture()
 {
-  SavedState = GetStateName();
-  cm(string(Name) $ " saved state : " $ string(SavedState));
-  GotoState('CutIdle');
+  // DD39: Save state only in these cases, otherwise run away:
+  if ( GetStateName() == 'patrol' || GetStateName() == 'stateIdle' || GetStateName() == 'stateWaitForTrigger' || GetStateName() == 'RandomWait' || GetStateName() == 'stateRunAway' )
+  {
+    SavedState = GetStateName();
+	cm(string(Name) $ " saved state : " $ string(SavedState));
+    GotoState('CutIdle');
+  }
+  
+  if ( IsInState('stateMoveTowardHarry') || IsInState('takeABreather') || IsInState('stateBiteHarry') || IsInState('stateBeingCarried') || IsInState('stateGetAwayFromHarry')
+		|| IsInState('stateGotAwayFromHarry') || IsInState('HarryGotAway') )
+  {
+    bStunned = False;
+	bCarried = False;
+	bObjectCanBePickedUp = False;
+	GotoState('stateRunAway');
+  }
 }
 
 state CutIdle
 {
   function Trigger (Actor Other, Pawn EventInstigator)
   {
-    cm(string(self.Name) $ " has been triggered in a cutscene");
-    SavedState = 'RandomWait';
+    if ( bWaitForTrigger )
+	{
+		cm(string(self.Name) $ " has been triggered in a cutscene");
+		bWaitForTrigger = False;
+		SavedState = 'RandomWait';
+	}
   }
   
  begin:
@@ -127,7 +166,11 @@ state CutIdle
 
 function PlayerCutRelease()
 {
-  GotoState(SavedState);
+  // DD39: Added check:
+  if ( IsInState('CutIdle') )
+  {
+    GotoState(SavedState);
+  }
 }
 
 function playHitSound()
@@ -276,7 +319,7 @@ function ThrownLanded (Vector HitNormal)
   SetCollisionSize(newR,NewH);
   StopSound(impStruggleSound,SLOT_Misc);
   StopSound(impThrownSound,SLOT_None);
-  if (  !bDespawned )
+  if ( !bDespawned )
   {
     GotoState('HitGroundWhenThrown');
   } else {
@@ -294,7 +337,9 @@ function bool GoAfterHarry()
 
   bRet = False;
   vVectorToHarry = PlayerHarry.Location - Location;
-  if ( VSize2D(vVectorToHarry) < SightRadius )
+  // DD39: Replacing VSize2D with VSize to fix Imp seeing Harry up high (Z coordinate)
+  //	  and adding "&& PlayerCanSeeMe() && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet')":
+  if ( VSize(vVectorToHarry) < SightRadius && PlayerCanSeeMe() && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
   {
     bRet = True;
   }
@@ -312,12 +357,19 @@ function bool ReadyPosition()
 
 function Trigger (Actor Other, Pawn EventInstigator)
 {
-  cm(string(self.Name) $ " has been triggered");
-  GotoState('RandomWait');
+  if ( bWaitForTrigger )
+  {
+	cm(string(self.Name) $ " has been triggered");
+	bWaitForTrigger = False;
+	GotoState('RandomWait');
+  }
 }
 
 function Tick (float DeltaTime)
 {
+  // DD39: New local var for GroupName:
+  local int I;
+  
   Super.Tick(DeltaTime);
   if ( bStunned == True )
   {
@@ -342,11 +394,47 @@ function Tick (float DeltaTime)
       }
     }
   }
+  // DD39 (start): Added to fix Imp not despawning when pushed into the hole with Flipendo:
+  if ( ( IsInState('stateBeingThrown') ) || ( IsInState('stateHitByFlipendo') ) )
+  {
+    bDespawnable = True;
+  } else {
+    bDespawnable = False;
+  }
+  if ( bDespawned )
+  {
+    bDespawnable = True;
+    if ( ( !IsInState('stateDied') ) )
+    {
+      GotoState('stateDied');
+    }
+  }
+  // DD39 (end).
   if ( IsInState('patrol') )
   {
     if ( GoAfterHarry() )
     {
-      vHome = Location;
+      // DD39 (start): Warn friends of Harry's presence:
+	  if ( numFriends != 0 )
+	  {
+		for(I = 0; I < numFriends; I++)
+		{
+		  if ( myFriends[I] != None )
+		  {
+		    if ( myFriends[I].IsInState('RandomWait') )
+			{
+			  myFriends[I].GotoState('stateMoveTowardHarry');
+			}
+			if ( myFriends[I].IsInState('patrol') )
+			{
+			  myFriends[I].vHome = myFriends[I].Location;
+			  myFriends[I].GotoState('stateMoveTowardHarry');
+			}
+		  }
+		}
+	  }
+	  // DD39 (end).
+	  vHome = Location;
       GotoState('stateMoveTowardHarry');
     }
   }
@@ -444,13 +532,23 @@ state takeABreather
   currentRotation.Pitch = 0;
   DesiredRotation = currentRotation;
   SetRotation(currentRotation);
-  PlayAnim('Idle');
-  FinishAnim();
+  // DD39: Moved accel and vel here to prevent sliding:
   Acceleration = vect(0.00,0.00,0.00);
   Velocity = vect(0.00,0.00,0.00);
+  PlayAnim('Idle');
+  FinishAnim();
+  // DD39: Moving these up:
+  //Acceleration = vect(0.00,0.00,0.00);
+  //Velocity = vect(0.00,0.00,0.00);
   LoopAnim('fidget_1');
   Sleep(FRand() + 2.5);
-  GotoState('stateMoveTowardHarry');
+  // DD39: Check if Harry is still in sight:
+  if ( GoAfterHarry() )
+  {
+    GotoState('stateMoveTowardHarry');
+  } else {
+    GotoState('stateRunAway');
+  }
 }
 
 state stateBiteHarry
@@ -480,6 +578,43 @@ begin:
 
 state stateRunAway
 {
+  // DD39: Added BeginState
+  event BeginState()
+  {
+    bTimerSet = False;
+  }
+  
+  // DD39: If you get stuck in a wall, start the timer:
+  event HitWall( vector HitNormal, actor HitWall )
+  {
+	if ( !bTimerSet )
+	{
+	  bTimerSet = True;
+	  SetTimer(20.00,false);
+	}
+  }
+
+  // DD39: When the timer runs out, set a new home:
+  event Timer()
+  {
+	Velocity = vect(0.0,0.0,0.0);
+	Acceleration = vect(0.0,0.0,0.0);
+	flag = True;
+	SetTimer(0.00,false);
+	vHome = Location;
+	GroundSpeed = GroundWalkSpeed;
+	RunAnimName = 'Walk';
+    LoopAnim('Idle');
+    GotoState('RandomWait');
+  }
+  
+  // DD39: Stop the timer at the end of this state:
+  event EndState()
+  {
+	SetTimer(0.00,false);
+	bTimerSet = False;
+  }
+
 begin:
   if ( BOOL_DEBUG_AI )
   {
@@ -490,7 +625,7 @@ begin:
   // if ( (VSize2D(Location - vHome) > 18) && (flag == False) )
   while ( (VSize2D(Location - vHome) > 18) && (flag == False) )
   {
-    MoveTo(vHome);
+	MoveTo(vHome);
     Sleep(0.1);
     if ( (VSize(Location - vHome) < SightRadius) && (ReadyPosition() == True) )
     {
@@ -498,8 +633,12 @@ begin:
     }
     // goto JL0044;
   }
+  // DD39: Stop the timer when you reach home:
+  SetTimer(0.00,false);
   GroundSpeed = GroundWalkSpeed;
-  LoopAnim('Walk');
+  // DD39: Replaced Walk with Idle to prevent walking on the spot:
+  //LoopAnim('Walk');
+  LoopAnim('Idle');
   GotoState('RandomWait');
 }
 
@@ -564,10 +703,15 @@ begin:
 
 state stateUpFromStunned
 {
+  // DD39: Added BeginState
+  event BeginState()
+  {
+    bObjectCanBePickedUp = False;
+    bStunned = False;
+	numAttacks = numAttacksDefault;
+  }
+  
 begin:
-  bObjectCanBePickedUp = False;
-  bStunned = False;
-  numAttacks = numAttacksDefault;
   PlayAnim('wakingup2run');
   FinishAnim();
   GotoState('stateRunAway');
@@ -695,7 +839,8 @@ defaultproperties
 
     soundFalling(0)=Sound'HPSounds.Critters_sfx.imp_scream'
 
-    bDespawnable=True
+    // DD39: Let the Tick function handle it:
+	//bDespawnable=True
 
     bThrownObjectDamage=True
 

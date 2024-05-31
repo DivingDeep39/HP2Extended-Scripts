@@ -13,6 +13,8 @@ var() int SpikeSpeed;
 var() int NumberOfSpikes;
 var() float durationNoSpikes;
 
+// DD39: Removed as it's useless and spells don't go in for some reason.
+/*
 function PlayerCutCapture()
 {
   GotoState('CutIdle');
@@ -27,6 +29,7 @@ function PlayerCutRelease()
 {
   GotoState('ReadyAndWaiting');
 }
+*/
 
 auto state ReadyAndWaiting
 {
@@ -110,7 +113,9 @@ auto state ReadyAndWaiting
   Sleep(Rand(2));
   PlayAnim('Idle');
   FinishAnim();
-  if ( baseHUD(PlayerHarry.myHUD).bCutSceneMode == False )
+  //DD39: Added "&& PlayerCanSeeMe() && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet')" AND
+  //	  replaced "baseHUD(PlayerHarry.myHUD).bCutSceneMode == False" with "!PlayerHarry.bIsCaptured"
+  if ( PlayerCanSeeMe() && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
   {
     if ( Abs(VSize(Location - PlayerHarry.Location)) < SightRadius )
     {

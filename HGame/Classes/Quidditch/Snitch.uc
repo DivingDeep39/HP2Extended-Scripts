@@ -45,7 +45,8 @@ function PostBeginPlay()
   {
     ParticleTrail = Class'Snitch_FX';
   }
-  bHasHoopTrail = True;
+  //DD39: for fuck sake...
+  //bHasHoopTrail = True;
   fHoopSpacing = 1.5;
   HoopTrailLen = 2;
   InitialHoopTrailEnd = 0;
@@ -343,7 +344,7 @@ function Vector GetTargetVector (Vector vActor, float BestDistance)
 
 defaultproperties
 {
-    bHasHoopTrail=True
+	bHasHoopTrail=True
 
     fHoopSpacing=1.50
 

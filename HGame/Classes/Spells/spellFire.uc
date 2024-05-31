@@ -81,7 +81,7 @@ state StateFlying
       }
       if ( Other.IsA('harry') )
       {
-        Other.TakeDamage(5,Instigator,vect(0.00,0.00,0.00),vect(0.00,0.00,0.00),'None');
+		Other.TakeDamage(5,Instigator,vect(0.00,0.00,0.00),vect(0.00,0.00,0.00),'None');
         CreateHitEffects(Other,HitLocation);
       } else {
         Spawn(Class'Fireball',,,Location);
@@ -96,7 +96,7 @@ state StateFlying
       }
       if ( Other.IsA('harry') )
       {
-        Other.TakeDamage(10,Instigator,vect(0.00,0.00,0.00),vect(0.00,0.00,0.00),'None');
+		Other.TakeDamage(10,Instigator,vect(0.00,0.00,0.00),vect(0.00,0.00,0.00),'None');
         CreateHitEffects(Other,HitLocation);
         OnSpellShutdown();
         Destroy();
@@ -152,4 +152,7 @@ defaultproperties
 
     // DrawType=0
 	DrawType=DT_None
+	
+	//DD39: hue change
+	LightHue=22
 }

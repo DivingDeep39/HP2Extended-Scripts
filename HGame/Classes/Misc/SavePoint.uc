@@ -75,9 +75,15 @@ function OnSaveGame()
 
 function Touch (Actor Other)
 {
-  if ( Other.IsA('harry') && bActive )
+  // DD39: Replaced "Other.IsA('harry')" with "Other == PlayerHarry":
+  if ( Other == PlayerHarry && bActive )
   {
-    PlayerHarry.ClientMessage("" $ string(self) $ " touched, other: " $ string(Other));
+	if ( PlayerHarry.bInstantDeath || PlayerHarry.bHarryKilled || PlayerHarry.IsInState('stateDead') )
+	{
+	  return;
+	}
+	
+	PlayerHarry.ClientMessage("" $ string(self) $ " touched, other: " $ string(Other));
     OnSaveGame();
   }
 }

@@ -26,10 +26,16 @@ function ColObjTouch (Actor Other, GenericColObj ColObj)
   {
     return;
   }
+  
   if ( HarryDamageTimer > 0.2 )
   {
     HarryDamageTimer = 0.0;
-    harry(Other).TakeDamage(DamageToHarry,self,ColObj.Location,vect(0.00,0.00,0.00),'None');
+	
+	//DD39: Added checks
+	if ( !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
+	{
+      harry(Other).TakeDamage(DamageToHarry,self,ColObj.Location,vect(0.00,0.00,0.00),'None');
+	}
   }
   if ( (GetStateName() != 'stateTwitch') && (GetStateName() != 'stateDie') && (GetStateName() != 'stateStun') && (GetStateName() != 'stateStunned') && (GetStateName() != 'stateBackToIdle') )
   {
@@ -131,7 +137,8 @@ begin:
     GotoState('stateIdle');
   }
   vTargetDir = PlayerHarry.Location - Location;
-  if ( VSize(vTargetDir) <= TooClose )
+  //DD39: Added "&& PlayerCanSeeMe() && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet')"
+  if ( ( VSize(vTargetDir) <= TooClose ) && PlayerCanSeeMe() && !PlayerHarry.bIsCaptured && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
   {
     PlaySoundAttack();
     PlayAnim('Attack');
@@ -176,6 +183,8 @@ state stateDie
 {
 begin:
   PlaySoundOuch();
+  //DD39: get rid of the headbox's collision when the limb is cut
+  headBox.Destroy();
   PlayAnim('Die');
   FinishAnim();
   GotoState('stateTwitch');
@@ -208,4 +217,7 @@ defaultproperties
     bBlockActors=False
 
     bRotateToDesired=False
+	
+	//DD39: remove shadow
+	ShadowClass=None
 }

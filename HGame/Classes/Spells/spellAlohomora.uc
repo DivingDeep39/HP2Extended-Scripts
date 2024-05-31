@@ -55,7 +55,7 @@ defaultproperties
 
     fxFlyParticleEffectClass=Class'HPParticle.Aloh_Fly'
 
-    fxHitParticleEffectClass=Class'HPParticle.Aloh_hit'
+    fxHitParticleEffectClass=Class'DD39Aloh_hit'
 
     SpellIncantation="spells3"
 
@@ -65,4 +65,10 @@ defaultproperties
 
     // DrawType=0
 	DrawType=DT_None
+	
+	//DD39: hue change
+	LightHue=37
+	
+	//DD39: radius change
+	LightRadius=5
 }

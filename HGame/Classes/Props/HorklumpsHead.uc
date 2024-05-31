@@ -130,4 +130,7 @@ defaultproperties
     CollisionHeight=7.00
 
     bBlockActors=False
+	
+	//DD39: prevent stacking
+	bCantStandOnMe=True
 }

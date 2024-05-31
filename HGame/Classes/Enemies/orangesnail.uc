@@ -36,6 +36,8 @@ var(Snail) int nTrailDamage;
 var(Snail) int nNormalBodyDamage;
 var(Snail) int nRamBodyDamage;
 var(Snail) float fStunDuration;
+//DD39: bool to mute idle sounds (Library fix)
+var(Snail) bool bStopIdlSounds;
 
 function PostBeginPlay()
 {
@@ -45,6 +47,18 @@ function PostBeginPlay()
     Log("Warning: Need to increase TRAIL_ARRAY_SIZE");
     nMaxTrailSegments = TRAIL_ARRAY_SIZE;
   }
+}
+
+//DD39: if Snail is triggered, fire the custom function bool
+function Trigger ( Actor Other, Pawn Instigator )
+{
+  ToggleIdleSounds();
+}
+
+//DD39: toggle bStopIdlSounds
+function bool ToggleIdleSounds()
+{
+  bStopIdlSounds = !bStopIdlSounds;
 }
 
 event Tick (float fDeltaTime)
@@ -298,7 +312,8 @@ auto state patrol
 
 	  fPatrolTime += fDeltaTime;
 
-	  if ( bAllowRam && !bCutInProgress && CanSee(playerHarry) && (fPatrolTime >= PATROL_BEFORE_RAM_TIME) )
+	//DD39: Added "&& !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet')"
+	  if ( bAllowRam && !bCutInProgress && CanSee(playerHarry) && (fPatrolTime >= PATROL_BEFORE_RAM_TIME) && !PlayerHarry.bKeepStationary && !PlayerHarry.IsInState('CelebrateCardSet') )
 	  {
 		  GoToState('RamHarry');
 	  }
@@ -307,12 +322,16 @@ auto state patrol
   function Timer()
   {
     SetTimer(RandRange(3.0,8.0),False);
-    if ( Rand(2) == 0 )
-    {
-      PlaySound(Sound'snail_slither1',SLOT_None,,,1000.0,RandRange(0.80,1.10));
-    } else {
-      PlaySound(Sound'snail_slither2',SLOT_None,,,1000.0,RandRange(0.80,1.10));
-    }
+	//DD39: if bool is on, don't play the sounds.
+	if ( !bStopIdlSounds )
+	{
+      if ( Rand(2) == 0 )
+      {
+        PlaySound(Sound'snail_slither1',SLOT_None,,,1000.0,RandRange(0.80,1.10));
+      } else {
+        PlaySound(Sound'snail_slither2',SLOT_None,,,1000.0,RandRange(0.80,1.10));
+      }
+	}
   }
   
   event BeginState()

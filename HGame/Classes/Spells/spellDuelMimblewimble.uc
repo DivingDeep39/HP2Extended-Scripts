@@ -60,7 +60,7 @@ defaultproperties
 
     fxFlyParticleEffectClass=Class'HPParticle.duelMimblewimble_fly'
 
-    fxHitParticleEffectClass=Class'HPParticle.duelMimblewimble_hit'
+    fxHitParticleEffectClass=Class'DD39duelMimblewimble_hit'
 
     SpellIncantation="spells3"
 
@@ -70,4 +70,7 @@ defaultproperties
 
     // DrawType=0
 	DrawType=DT_None
+	
+	//DD39: radius change
+	LightRadius=5
 }

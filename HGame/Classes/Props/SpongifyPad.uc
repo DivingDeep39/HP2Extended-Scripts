@@ -80,7 +80,14 @@ event Destroyed()
 
 function bool IsEnabled()
 {
-  return  !IsInState('stateDisabled');
+  // DD39: Fixes Harry bouncing if pad is in stateWaitForEvent 
+  //return  !IsInState('stateDisabled');
+  if ( !IsInState('stateDisabled') && !IsInState('stateWaitForEvent') )
+  {
+	return True;
+  }
+  
+  return False;
 }
 
 function TurnOnSpecialFX()

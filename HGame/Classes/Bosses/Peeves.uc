@@ -60,6 +60,13 @@ function PostBeginPlay()
 	ParticleFXActor.Lifetime.Base = fParticleTrailLife;
 }
 
+// DD39: Added Destroyed event to get rid of particles if going oob.
+event Destroyed()
+{
+	ParticleFXActor.Shutdown();
+	Super.Destroyed();
+}
+
 static function Vector GetFacing (Actor A)
 {
 	return Vec(1.0,0.0,0.0) >> A.Rotation;
