@@ -1,4 +1,4 @@
-# HP2Extended-Scripts
+# HP2Extended-UScripts
 UC scripts of the HP2 Extended Mod project.
 It is NOT recommended to download and compile these UCs, as some script changes may require in-dev builds of the M212 HP2 Engine/Editor.
 Please, always download the latest public versions of the M212 Engine/Editor and the HP2 Extended Mod from the links below.
