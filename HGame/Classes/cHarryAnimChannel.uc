@@ -274,7 +274,8 @@ state stateKnockBack
  begin:
   if ( harry(Owner).bHarryUsingSword && (baseWand(harry(Owner).Weapon).ChargingLevel() > 0) )
   {
-    baseWand(harry(Owner).Weapon).CastSpell(harry(Owner).Weapon,,Class'spellSwordFire');
+    // DD39: Don't cast, so you can't cheese through the Basilisk fight.
+	//baseWand(harry(Owner).Weapon).CastSpell(harry(Owner).Weapon,,Class'spellSwordFire');
     harry(Owner).StopAiming();
   }
   PlayAnim('KnockBack',,0.3);
