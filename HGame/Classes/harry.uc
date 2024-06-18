@@ -4051,7 +4051,16 @@ function TurnOffSpellCursor()
   bIsAimingWithCharge = False;
   baseWand(Weapon).StopChargingSpell();
   SpellCursor.TurnTargetingOff();
-  GroundSpeed = GroundRunSpeed;
+  
+  // DD39: Stop speeding up in cutscenes!
+  if ( bDoingWalk )
+  {
+	GroundSpeed = GroundWalkSpeed;
+  }
+  else
+  {
+	GroundSpeed = GroundRunSpeed;
+  }
 }
 
 function TurnOnCastingVars (bool in_bHarryUsingSword)
